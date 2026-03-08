@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Find a Spot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --bg: #0d0b09;
+      --bg2: #181412;
+      --bg3: #221e1a;
+      --bg4: #2a2420;
+      --accent: #c9472a;
+      --accent2: #e05a38;
+      --accent-dim: rgba(201,71,42,0.15);
+      --accent-dim2: rgba(201,71,42,0.08);
+      --love: #e0607a;
+      --like: #5aab72;
+      --pass: #7a8998;
+      --text: #f0ebe3;
+      --text2: #9b8f83;
+      --text3: #5a5147;
+      --border: #242019;
+      --border2: #332e29;
+      --card: #181412;
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --safe-t: env(safe-area-inset-top, 0px);
+    }
+    html, body { height: 100%; background: var(--bg); }
+    body { font-family: 'IBM Plex Sans', sans-serif; color: var(--text); min-height: 100vh; overflow-x: hidden; }
+    #root { min-height: 100vh; }
+    input, textarea, button, select { font-family: 'IBM Plex Sans', sans-serif; }
+    button { cursor: pointer; border: none; background: none; }
+    input, textarea {
+      background: var(--bg3); border: 1px solid var(--border2);
+      color: var(--text); border-radius: 10px; padding: 13px 15px;
+      font-size: 16px; width: 100%; outline: none; -webkit-appearance: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: none; }
+    ::placeholder { color: var(--text3); }
+    .serif { font-family: 'Cormorant Garamond', serif; }
+    .tab-content { flex: 1; overflow-y: auto; padding-bottom: calc(80px + var(--safe-b)); }
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--bg2); border-top: 1px solid var(--border);
+      display: flex; padding-bottom: var(--safe-b); z-index: 100;
+    }
+    .nav-btn {
+      flex: 1; padding: 12px 4px 10px;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      color: var(--text3); font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em;
+      transition: color 0.2s; position: relative;
+    }
+    .nav-btn.active { color: var(--accent2); }
+    .nav-icon { font-size: 22px; line-height: 1; transition: transform 0.2s; }
+    .nav-btn.active .nav-icon { transform: scale(1.08); }
+    .page-header {
+      padding-top: calc(16px + var(--safe-t)); padding-bottom: 14px;
+      padding-left: 20px; padding-right: 20px;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .page-title { font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 300; }
+    .page-sub { font-size: 11px; color: var(--text3); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.12em; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .btn-primary {
+      background: var(--accent); color: #fff; border-radius: 11px;
+      padding: 15px 24px; font-size: 15px; font-weight: 500; width: 100%;
+      transition: background 0.2s, transform 0.1s; letter-spacing: 0.02em;
+    }
+    .btn-primary:active { background: var(--accent2); transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.4; }
+    .btn-ghost {
+      border: 1px solid var(--border2); color: var(--text2); border-radius: 11px;
+      padding: 13px 24px; font-size: 14px; width: 100%; transition: border-color 0.2s;
+    }
+    .btn-ghost:active { border-color: var(--accent); color: var(--accent2); }
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .badge-love { background: rgba(224,96,122,0.15); color: var(--love); }
+    .badge-like { background: rgba(90,171,114,0.15); color: var(--like); }
+    .badge-pass { background: rgba(122,137,152,0.15); color: var(--pass); }
+    .chip {
+      padding: 7px 15px; border-radius: 20px; font-size: 13px;
+      border: 1px solid var(--border2); color: var(--text2); white-space: nowrap;
+      transition: all 0.15s; flex-shrink: 0;
+    }
+    .chip.active { border-color: var(--accent); color: var(--accent2); background: var(--accent-dim2); }
+    .chip-row { display: flex; gap: 8px; overflow-x: auto; padding: 12px 20px; -ms-overflow-style: none; scrollbar-width: none; }
+    .chip-row::-webkit-scrollbar { display: none; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+      z-index: 200; display: flex; align-items: flex-end;
+    }
+    .modal-sheet {
+      background: var(--bg2); border-radius: 20px 20px 0 0;
+      width: 100%; padding: 20px 20px calc(24px + var(--safe-b));
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border2); margin: 0 auto 20px; }
+    .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 400; margin-bottom: 18px; }
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+    .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text3); margin-bottom: 10px; }
+    .rating-btn {
+      flex: 1; padding: 15px 8px; border-radius: 12px;
+      border: 2px solid var(--border2); display: flex; flex-direction: column;
+      align-items: center; gap: 5px; font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text3); transition: all 0.15s;
+    }
+    .rating-emoji { font-size: 26px; line-height: 1; }
+    .rating-btn.love.sel { border-color: var(--love); background: rgba(224,96,122,0.1); color: var(--love); }
+    .rating-btn.like.sel { border-color: var(--like); background: rgba(90,171,114,0.1); color: var(--like); }
+    .rating-btn.pass.sel { border-color: var(--pass); background: rgba(122,137,152,0.1); color: var(--pass); }
+    .freq-btn {
+      padding: 11px 15px; border-radius: 10px; border: 1px solid var(--border2);
+      font-size: 13px; color: var(--text2); transition: all 0.15s; text-align: left; width: 100%;
+    }
+    .freq-btn.sel { border-color: var(--accent); color: var(--accent2); background: var(--accent-dim2); }
+    .place-preview { border-radius: 12px; overflow: hidden; border: 1px solid var(--border2); margin-bottom: 20px; }
+    .place-preview-img { width: 100%; height: 150px; object-fit: cover; display: block; }
+    .place-preview-body { padding: 14px; background: var(--bg3); }
+    .place-preview-name { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; margin-bottom: 4px; }
+    .place-preview-meta { font-size: 12px; color: var(--text3); }
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-list {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 150;
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-top: none; border-radius: 0 0 12px 12px;
+      max-height: 280px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .ac-item {
+      padding: 13px 16px; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:active { background: var(--bg3); }
+    .ac-main { font-size: 14px; color: var(--text); }
+    .ac-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+    .spot-card { display: flex; gap: 13px; padding: 14px; }
+    .spot-thumb {
+      width: 68px; height: 68px; border-radius: 10px;
+      object-fit: cover; flex-shrink: 0; background: var(--bg3);
+    }
+    .spot-thumb-ph {
+      width: 68px; height: 68px; border-radius: 10px;
+      background: var(--bg3); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 26px;
+    }
+    .spot-name { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 400; line-height: 1.2; margin-bottom: 4px; }
+    .spot-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
+    .spot-notes { font-size: 12px; color: var(--text2); font-style: italic; margin-top: 6px; line-height: 1.4; }
+    .action-row { display: flex; gap: 8px; padding: 0 14px 12px; justify-content: flex-end; }
+    .action-edit { padding: 7px 14px; border-radius: 8px; background: var(--bg3); color: var(--text2); font-size: 12px; }
+    .action-del { padding: 7px 14px; border-radius: 8px; background: rgba(201,71,42,0.12); color: var(--accent); font-size: 12px; }
+    .find-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+    .find-card-img { width: 100%; height: 150px; object-fit: cover; display: block; background: var(--bg3); }
+    .find-card-body { padding: 14px; }
+    .find-card-name { font-family: 'Cormorant Garamond', serif; font-size: 20px; margin-bottom: 6px; }
+    .find-card-meta { font-size: 12px; color: var(--text3); }
+    .ai-pill {
+      display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px;
+      border-radius: 20px; background: var(--accent-dim); border: 1px solid rgba(201,71,42,0.3);
+      font-size: 11px; color: var(--accent2); text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .ai-reason { font-size: 13px; color: var(--text2); line-height: 1.5; margin-top: 8px; font-style: italic; }
+    .spinner { width: 22px; height: 22px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty-state { text-align: center; padding: 64px 30px; }
+    .empty-icon { font-size: 52px; margin-bottom: 16px; }
+    .empty-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; color: var(--text2); margin-bottom: 8px; }
+    .empty-text { font-size: 13px; color: var(--text3); line-height: 1.7; }
+    .setup-warn { background: rgba(201,71,42,0.1); border: 1px solid rgba(201,71,42,0.25); border-radius: 10px; padding: 13px 15px; margin: 14px 20px; font-size: 13px; color: var(--accent2); line-height: 1.6; }
+    .star { color: #f5a623; }
+    .login-bg {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 24px; background: var(--bg);
+    }
+    .login-logo { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 300; text-align: center; margin-bottom: 8px; }
+    .login-tagline { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.18em; text-align: center; margin-bottom: 48px; }
+    .login-form-wrap { width: 100%; max-width: 380px; }
+    .login-err { background: rgba(201,71,42,0.12); border: 1px solid rgba(201,71,42,0.3); border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--accent2); margin-bottom: 16px; }
+    .login-toggle { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text3); }
+    .login-toggle button { color: var(--accent2); font-size: 13px; padding: 4px; }
+    .date-opt {
+      padding: 16px; border-radius: 12px; border: 1px solid var(--border2);
+      margin-bottom: 10px; cursor: pointer; transition: all 0.15s;
+    }
+    .date-opt:active { border-color: var(--accent); background: var(--accent-dim2); }
+    .date-opt-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; margin-bottom: 4px; }
+    .date-opt-desc { font-size: 13px; color: var(--text3); line-height: 1.5; }
+    .city-header { padding: 8px 20px 4px; font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; }
+    .filter-row { display: flex; gap: 8px; overflow-x: auto; padding: 10px 20px; -ms-overflow-style: none; scrollbar-width: none; }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .search-wrap { padding: 12px 20px; }
+    .search-inp { background: var(--bg3); border: 1px solid var(--border2); border-radius: 10px; padding: 11px 14px; font-size: 15px; color: var(--text); width: 100%; outline: none; -webkit-appearance: none; }
+    .search-inp:focus { border-color: var(--accent); }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .greet { font-size: 13px; color: var(--text3); }
+    .signout-btn { font-size: 12px; color: var(--text3); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); }
+    .count-badge { background: var(--accent); color: #fff; font-size: 10px; border-radius: 10px; padding: 1px 6px; margin-left: 4px; vertical-align: middle; }
+    .find-controls { padding: 14px 20px 6px; display: flex; flex-direction: column; gap: 12px; }
+    .find-query-wrap { position: relative; }
+    .find-query { padding-right: 100px !important; }
+    .date-btn-inline {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: var(--bg4); border: 1px solid var(--border2); border-radius: 8px;
+      padding: 7px 12px; font-size: 13px; color: var(--text2); white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .date-btn-inline:active { border-color: var(--accent); color: var(--accent2); }
+    .find-go-btn {
+      background: var(--accent); color: #fff; border-radius: 10px;
+      padding: 13px; font-size: 15px; font-weight: 500; width: 100%;
+      transition: background 0.2s;
+    }
+    .find-go-btn:active { background: var(--accent2); }
+    .price-sym { letter-spacing: 0; }
+    .place-google-rating { color: #f5a623; font-size: 12px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// ======================================================
+// CONFIGURATION — edit before deploying
+// ======================================================
+var SUPABASE_URL = "https://ljdezniltcvpsjvsbahn.supabase.co";
+var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqZGV6bmlsdGN2cHNqdnNiYWhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMTA1MDIsImV4cCI6MjA4ODU4NjUwMn0.K3IKHtAzDK6qzDxxUVbJq8jKy9Trg9TLyAIM1WPzhHk";
+// Get from console.cloud.google.com — enable "Places API (New)"
+var GOOGLE_KEY = "YOUR_GOOGLE_PLACES_API_KEY";
+// Get from console.anthropic.com — optional, powers AI Find features
+var CLAUDE_KEY = "YOUR_CLAUDE_API_KEY";
+
+// ======================================================
+// SUPABASE SQL (run this ONCE in your SQL editor)
+// ======================================================
+// CREATE TABLE restaurants (
+//   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+//   google_place_id text,
+//   name text NOT NULL,
+//   address text, city text, lat numeric, lng numeric,
+//   cuisine text, price_level integer, price_symbol text,
+//   photo_url text, google_rating numeric,
+//   rating text, frequency text, notes text,
+//   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+//   created_at timestamptz DEFAULT now()
+// );
+// ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "sel own" ON restaurants FOR SELECT USING (auth.uid() = user_id);
+// CREATE POLICY "ins own" ON restaurants FOR INSERT WITH CHECK (auth.uid() = user_id);
+// CREATE POLICY "upd own" ON restaurants FOR UPDATE USING (auth.uid() = user_id);
+// CREATE POLICY "del own" ON restaurants FOR DELETE USING (auth.uid() = user_id);
+
+// ======================================================
+// HELPERS
+// ======================================================
+var E = React.createElement;
+var useState = React.useState;
+var useEffect = React.useEffect;
+var useRef = React.useRef;
+var useCallback = React.useCallback;
+
+function sbAuth(path, body) {
+  return fetch(SUPABASE_URL + "/auth/v1/" + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY },
+    body: JSON.stringify(body)
+  }).then(function(r) { return r.json(); });
+}
+
+function sbGet(path, token) {
+  return fetch(SUPABASE_URL + "/rest/v1/" + path, {
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + (token || SUPABASE_ANON_KEY)
+    }
+  }).then(function(r) { return r.json(); });
+}
+
+function sbPost(path, body, token) {
+  return fetch(SUPABASE_URL + "/rest/v1/" + path, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + (token || SUPABASE_ANON_KEY),
+      "Prefer": "return=representation"
+    },
+    body: JSON.stringify(body)
+  }).then(function(r) { return r.json(); });
+}
+
+function sbPatch(path, body, token) {
+  return fetch(SUPABASE_URL + "/rest/v1/" + path, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + (token || SUPABASE_ANON_KEY),
+      "Prefer": "return=representation"
+    },
+    body: JSON.stringify(body)
+  }).then(function(r) { return r.json(); });
+}
+
+function sbDelete(path, token) {
+  return fetch(SUPABASE_URL + "/rest/v1/" + path, {
+    method: "DELETE",
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + (token || SUPABASE_ANON_KEY)
+    }
+  });
+}
+
+function priceLvl(pl) {
+  if (pl === "PRICE_LEVEL_INEXPENSIVE") return { num: 1, sym: "$" };
+  if (pl === "PRICE_LEVEL_MODERATE") return { num: 2, sym: "$$" };
+  if (pl === "PRICE_LEVEL_EXPENSIVE") return { num: 3, sym: "$$$" };
+  if (pl === "PRICE_LEVEL_VERY_EXPENSIVE") return { num: 4, sym: "$$$$" };
+  return { num: 0, sym: "" };
+}
+
+function photoUrl(name) {
+  if (!name) return null;
+  return "https://places.googleapis.com/v1/" + name + "/media?maxWidthPx=600&key=" + GOOGLE_KEY;
+}
+
+function cuisineFromTypes(types) {
+  if (!types) return "";
+  var map = {
+    "italian_restaurant": "Italian", "chinese_restaurant": "Chinese",
+    "japanese_restaurant": "Japanese", "mexican_restaurant": "Mexican",
+    "french_restaurant": "French", "indian_restaurant": "Indian",
+    "thai_restaurant": "Thai", "mediterranean_restaurant": "Mediterranean",
+    "american_restaurant": "American", "seafood_restaurant": "Seafood",
+    "pizza_restaurant": "Pizza", "sushi_restaurant": "Sushi",
+    "steakhouse": "Steakhouse", "burger_restaurant": "Burgers",
+    "breakfast_restaurant": "Breakfast", "cafe": "Cafe",
+    "bar": "Bar", "bakery": "Bakery",
+    "korean_restaurant": "Korean", "vietnamese_restaurant": "Vietnamese",
+    "greek_restaurant": "Greek", "spanish_restaurant": "Spanish",
+    "middle_eastern_restaurant": "Middle Eastern", "ethiopian_restaurant": "Ethiopian",
+    "food": "Restaurant", "restaurant": "Restaurant"
+  };
+  for (var i = 0; i < types.length; i++) {
+    if (map[types[i]]) return map[types[i]];
+  }
+  return "Restaurant";
+}
+
+function cityFromAddress(address) {
+  if (!address) return "";
+  var parts = address.split(",");
+  if (parts.length >= 2) return parts[parts.length - 3] ? parts[parts.length - 3].trim() : parts[parts.length - 2].trim();
+  return address;
+}
+
+function ratingLabel(r) {
+  if (r === "love") return "Love it";
+  if (r === "like") return "Like it";
+  if (r === "pass") return "Pass";
+  return r || "";
+}
+
+function freqLabel(f) {
+  if (f === "regular") return "Regular spot";
+  if (f === "few-times") return "Few times a year";
+  if (f === "special") return "Special occasions";
+  if (f === "once") return "Probably once";
+  return f || "";
+}
+
+function starsStr(n) {
+  if (!n) return "";
+  var s = "";
+  var full = Math.round(n);
+  for (var i = 0; i < full; i++) s += "★";
+  for (var j = full; j < 5; j++) s += "☆";
+  return s;
+}
+
+function debounce(fn, ms) {
+  var t;
+  return function() {
+    var args = arguments;
+    var ctx = this;
+    clearTimeout(t);
+    t = setTimeout(function() { fn.apply(ctx, args); }, ms);
+  };
+}
+
+// Google Places Autocomplete
+function placesAutocomplete(input) {
+  return fetch("https://places.googleapis.com/v1/places:autocomplete", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": GOOGLE_KEY
+    },
+    body: JSON.stringify({ input: input })
+  }).then(function(r) { return r.json(); });
+}
+
+// Google Place Details (New API)
+function placeDetails(placeId) {
+  var fields = "id,displayName,formattedAddress,location,rating,priceLevel,photos,types,primaryTypeDisplayName";
+  return fetch("https://places.googleapis.com/v1/places/" + placeId + "?fields=" + fields, {
+    headers: { "X-Goog-Api-Key": GOOGLE_KEY }
+  }).then(function(r) { return r.json(); });
+}
+
+// Google Nearby Search
+function nearbySearch(lat, lng, radius) {
+  return fetch("https://places.googleapis.com/v1/places:searchNearby", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": GOOGLE_KEY,
+      "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.priceLevel,places.photos,places.types,places.primaryTypeDisplayName"
+    },
+    body: JSON.stringify({
+      includedTypes: ["restaurant"],
+      maxResultCount: 20,
+      locationRestriction: {
+        circle: {
+          center: { latitude: lat, longitude: lng },
+          radius: radius || 1600
+        }
+      }
+    })
+  }).then(function(r) { return r.json(); });
+}
+
+// Claude recommendation
+function claudeFind(userHistory, nearby, query, dateContext) {
+  var histStr = userHistory.length === 0 ? "No history yet."
+    : userHistory.map(function(r) {
+        return r.name + ": " + ratingLabel(r.rating) + (r.cuisine ? " (" + r.cuisine + ")" : "");
+      }).join("; ");
+
+  var nearbyStr = nearby.map(function(p, i) {
+    var pr = priceLvl(p.priceLevel);
+    var ct = p.primaryTypeDisplayName ? p.primaryTypeDisplayName.text : cuisineFromTypes(p.types);
+    return i + ". " + p.displayName.text + " | " + ct + " | " + pr.sym + " | Google " + (p.rating || "?") + "/5 | " + (p.formattedAddress || "");
+  }).join("\n");
+
+  var contextLine = dateContext
+    ? "Context: This is for a date night. Date type: " + dateContext + ". Prioritize atmosphere, romance, and experience."
+    : "Context: " + (query || "General recommendation.");
+
+  var prompt = "You are a personalized restaurant recommendation assistant.\n\n"
+    + "User's restaurant history: " + histStr + "\n\n"
+    + "Nearby restaurants:\n" + nearbyStr + "\n\n"
+    + contextLine + "\n"
+    + (query && dateContext ? "User's additional request: " + query + "\n" : "")
+    + "\nRecommend the best 3 from the nearby list based on the user's preferences and request. "
+    + "Return ONLY a JSON array, no other text: [{\"index\":0,\"name\":\"name\",\"reason\":\"1-2 sentence reason why this fits\"}]";
+
+  return fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": CLAUDE_KEY,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 600,
+      messages: [{ role: "user", content: prompt }]
+    })
+  }).then(function(r) { return r.json(); });
+}
+
+// ======================================================
+// LOGIN SCREEN
+// ======================================================
+function LoginFormInner(props) {
+  var isSignup = props.isSignup;
+  var onLogin = props.onLogin;
+  var onToggle = props.onToggle;
+  var S = useState;
+  var _fn = S(""); var firstName = _fn[0]; var setFirstName = _fn[1];
+  var _em = S(""); var email = _em[0]; var setEmail = _em[1];
+  var _pw = S(""); var pw = _pw[0]; var setPw = _pw[1];
+  var _err = S(""); var err = _err[0]; var setErr = _err[1];
+  var _ld = S(false); var loading = _ld[0]; var setLoading = _ld[1];
+
+  function handleSubmit() {
+    if (!email || !pw) { setErr("Please fill in all fields."); return; }
+    if (isSignup && !firstName) { setErr("Please enter your first name."); return; }
+    setLoading(true); setErr("");
+    var p;
+    if (isSignup) {
+      p = sbAuth("signup", { email: email, password: pw, data: { first_name: firstName } });
+    } else {
+      p = sbAuth("token?grant_type=password", { email: email, password: pw });
+    }
+    p.then(function(data) {
+      setLoading(false);
+      if (data.error || data.error_description) {
+        setErr(data.error_description || data.error || "Something went wrong.");
+        return;
+      }
+      if (data.access_token) {
+        onLogin(data.access_token, data.user);
+      } else if (data.user && isSignup) {
+        setErr("Account created! Please sign in.");
+        onToggle();
+      } else {
+        setErr("Login failed. Check your credentials.");
+      }
+    }).catch(function() {
+      setLoading(false);
+      setErr("Network error. Try again.");
+    });
+  }
+
+  return E("div", { className: "login-form-wrap" },
+    err && E("div", { className: "login-err" }, err),
+    isSignup && E("div", { style: { marginBottom: 12 } },
+      E("input", {
+        type: "text", placeholder: "First name", value: firstName,
+        onChange: function(e) { setFirstName(e.target.value); },
+        style: { fontSize: 16 }
+      })
+    ),
+    E("div", { style: { marginBottom: 12 } },
+      E("input", {
+        type: "email", placeholder: "Email", value: email,
+        onChange: function(e) { setEmail(e.target.value); },
+        autoCapitalize: "none", autoCorrect: "off",
+        style: { fontSize: 16 }
+      })
+    ),
+    E("div", { style: { marginBottom: 20 } },
+      E("input", {
+        type: "password", placeholder: "Password", value: pw,
+        onChange: function(e) { setPw(e.target.value); },
+        onKeyDown: function(e) { if (e.key === "Enter") handleSubmit(); },
+        style: { fontSize: 16 }
+      })
+    ),
+    E("button", { className: "btn-primary", onClick: handleSubmit, disabled: loading },
+      loading ? "..." : (isSignup ? "Create Account" : "Sign In")
+    ),
+    E("div", { className: "login-toggle" },
+      isSignup ? "Already have an account? " : "New here? ",
+      E("button", { onClick: onToggle }, isSignup ? "Sign In" : "Create Account")
+    )
+  );
+}
+
+function LoginScreen(props) {
+  var _su = useState(false); var isSignup = _su[0]; var setSignup = _su[1];
+  return E("div", { className: "login-bg" },
+    E("div", { className: "login-logo" }, "Find a Spot"),
+    E("div", { className: "login-tagline" }, "Your personal restaurant guide"),
+    E(LoginFormInner, {
+      isSignup: isSignup,
+      onLogin: props.onLogin,
+      onToggle: function() { setSignup(!isSignup); }
+    })
+  );
+}
+
+// ======================================================
+// ADD/EDIT RESTAURANT FORM (isolated component - mobile safe)
+// ======================================================
+function AddRestaurantForm(props) {
+  var onSave = props.onSave;
+  var onCancel = props.onCancel;
+  var existing = props.existing || null;
+
+  var _q = useState(existing ? existing.name : ""); var query = _q[0]; var setQuery = _q[1];
+  var _sug = useState([]); var suggestions = _sug[0]; var setSuggestions = _sug[1];
+  var _place = useState(existing ? {
+    name: existing.name, address: existing.address, city: existing.city,
+    photo_url: existing.photo_url, cuisine: existing.cuisine,
+    price_symbol: existing.price_symbol, google_rating: existing.google_rating,
+    google_place_id: existing.google_place_id,
+    price_level: existing.price_level, lat: existing.lat, lng: existing.lng
+  } : null); var place = _place[0]; var setPlace = _place[1];
+  var _loading = useState(false); var acLoading = _loading[0]; var setAcLoading = _loading[1];
+  var _pdLoad = useState(false); var pdLoading = _pdLoad[0]; var setPdLoading = _pdLoad[1];
+  var _rating = useState(existing ? existing.rating : ""); var rating = _rating[0]; var setRating = _rating[1];
+  var _freq = useState(existing ? existing.frequency : ""); var freq = _freq[0]; var setFreq = _freq[1];
+  var _notes = useState(existing ? (existing.notes || "") : ""); var notes = _notes[0]; var setNotes = _notes[1];
+  var _saving = useState(false); var saving = _saving[0]; var setSaving = _saving[1];
+  var _showAc = useState(false); var showAc = _showAc[0]; var setShowAc = _showAc[1];
+  var _err = useState(""); var formErr = _err[0]; var setFormErr = _err[1];
+
+  var debouncedSearch = useCallback(
+    debounce(function(val) {
+      if (val.length < 2 || GOOGLE_KEY === "YOUR_GOOGLE_PLACES_API_KEY") { setSuggestions([]); return; }
+      setAcLoading(true);
+      placesAutocomplete(val).then(function(data) {
+        setAcLoading(false);
+        if (data.suggestions) {
+          setSuggestions(data.suggestions.slice(0, 6));
+          setShowAc(true);
+        }
+      }).catch(function() { setAcLoading(false); });
+    }, 350),
+    []
+  );
+
+  function onQueryChange(val) {
+    setQuery(val);
+    if (!val) { setSuggestions([]); setPlace(null); setShowAc(false); return; }
+    debouncedSearch(val);
+  }
+
+  function selectSuggestion(sug) {
+    var pp = sug.placePrediction;
+    if (!pp) return;
+    setShowAc(false);
+    setSuggestions([]);
+    var mainText = pp.structuredFormat && pp.structuredFormat.mainText ? pp.structuredFormat.mainText.text : (pp.text ? pp.text.text : "");
+    setQuery(mainText);
+    setPdLoading(true);
+    placeDetails(pp.placeId).then(function(d) {
+      setPdLoading(false);
+      if (!d || !d.displayName) { return; }
+      var pr = priceLvl(d.priceLevel);
+      var ph = d.photos && d.photos.length > 0 ? photoUrl(d.photos[0].name) : null;
+      var cu = d.primaryTypeDisplayName ? d.primaryTypeDisplayName.text : cuisineFromTypes(d.types);
+      var city = cityFromAddress(d.formattedAddress);
+      var lat = d.location ? d.location.latitude : null;
+      var lng = d.location ? d.location.longitude : null;
+      setPlace({
+        google_place_id: d.id,
+        name: d.displayName.text,
+        address: d.formattedAddress || "",
+        city: city,
+        lat: lat, lng: lng,
+        cuisine: cu,
+        price_level: pr.num,
+        price_symbol: pr.sym,
+        photo_url: ph,
+        google_rating: d.rating || null
+      });
+      setQuery(d.displayName.text);
+    }).catch(function() { setPdLoading(false); });
+  }
+
+  function handleSave() {
+    if (!query.trim()) { setFormErr("Please enter a restaurant name."); return; }
+    if (!rating) { setFormErr("Please select your rating."); return; }
+    setSaving(true); setFormErr("");
+    var rec = place ? Object.assign({}, place) : { name: query.trim() };
+    rec.rating = rating;
+    rec.frequency = freq;
+    rec.notes = notes;
+    onSave(rec, existing ? existing.id : null, setSaving);
+  }
+
+  var needsKey = GOOGLE_KEY === "YOUR_GOOGLE_PLACES_API_KEY";
+
+  return E("div", { style: { padding: "0 20px 20px" } },
+    needsKey && E("div", { className: "setup-warn" },
+      "⚠️ Add your Google Places API key to enable restaurant search. Edit the GOOGLE_KEY variable at the top of the file."
+    ),
+    E("div", { style: { marginBottom: 20, marginTop: 16 } },
+      E("p", { className: "section-label" }, "Restaurant"),
+      E("div", { className: "autocomplete-wrap" },
+        E("input", {
+          type: "text",
+          placeholder: needsKey ? "Type restaurant name..." : "Search for a restaurant...",
+          value: query,
+          onChange: function(e) { onQueryChange(e.target.value); },
+          onFocus: function() { if (suggestions.length > 0) setShowAc(true); },
+          autoCorrect: "off", autoCapitalize: "words"
+        }),
+        showAc && suggestions.length > 0 && E("div", { className: "autocomplete-list" },
+          suggestions.map(function(sug, i) {
+            var pp = sug.placePrediction;
+            if (!pp) return null;
+            var main = pp.structuredFormat && pp.structuredFormat.mainText ? pp.structuredFormat.mainText.text : (pp.text ? pp.text.text : "");
+            var sub = pp.structuredFormat && pp.structuredFormat.secondaryText ? pp.structuredFormat.secondaryText.text : "";
+            return E("div", { key: i, className: "ac-item",
+              onMouseDown: function(e) { e.preventDefault(); },
+              onTouchEnd: function() { selectSuggestion(sug); },
+              onClick: function() { selectSuggestion(sug); }
+            },
+              E("div", { className: "ac-main" }, main),
+              sub && E("div", { className: "ac-sub" }, sub)
+            );
+          })
+        )
+      ),
+      pdLoading && E("div", { style: { textAlign: "center", padding: "12px" } },
+        E("div", { className: "spinner", style: { margin: "0 auto" } })
+      )
+    ),
+
+    place && E("div", { className: "place-preview", style: { marginBottom: 20 } },
+      place.photo_url && E("img", { src: place.photo_url, className: "place-preview-img", alt: place.name }),
+      E("div", { className: "place-preview-body" },
+        E("div", { className: "place-preview-name" }, place.name),
+        E("div", { className: "place-preview-meta" },
+          [place.cuisine, place.price_symbol, place.google_rating ? ("★ " + place.google_rating) : null]
+            .filter(Boolean).join("  ·  ")
+        ),
+        place.address && E("div", { className: "place-preview-meta", style: { marginTop: 4 } }, place.address)
+      )
+    ),
+
+    E("div", { style: { marginBottom: 20 } },
+      E("p", { className: "section-label" }, "Your Rating"),
+      E("div", { style: { display: "flex", gap: 10 } },
+        E("button", { className: "rating-btn love" + (rating === "love" ? " sel" : ""), onClick: function() { setRating("love"); } },
+          E("span", { className: "rating-emoji" }, "❤️"),
+          E("span", null, "Love it")
+        ),
+        E("button", { className: "rating-btn like" + (rating === "like" ? " sel" : ""), onClick: function() { setRating("like"); } },
+          E("span", { className: "rating-emoji" }, "👍"),
+          E("span", null, "Like it")
+        ),
+        E("button", { className: "rating-btn pass" + (rating === "pass" ? " sel" : ""), onClick: function() { setRating("pass"); } },
+          E("span", { className: "rating-emoji" }, "👎"),
+          E("span", null, "Pass")
+        )
+      )
+    ),
+
+    E("div", { style: { marginBottom: 20 } },
+      E("p", { className: "section-label" }, "Visit Frequency"),
+      E("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+        [
+          { val: "regular", label: "Regular spot for me 🔁" },
+          { val: "few-times", label: "A few times a year 📅" },
+          { val: "special", label: "Special occasions only ✨" },
+          { val: "once", label: "Likely not more than once 🤷" }
+        ].map(function(o) {
+          return E("button", { key: o.val, className: "freq-btn" + (freq === o.val ? " sel" : ""), onClick: function() { setFreq(o.val); } },
+            o.label
+          );
+        })
+      )
+    ),
+
+    E("div", { style: { marginBottom: 24 } },
+      E("p", { className: "section-label" }, "Notes (optional)"),
+      E("textarea", {
+        placeholder: "e.g. Get the short rib, sit at the bar, ask for Marco...",
+        value: notes,
+        onChange: function(e) { setNotes(e.target.value); },
+        rows: 3,
+        style: { fontSize: 15, lineHeight: 1.5 }
+      })
+    ),
+
+    formErr && E("div", { style: { marginBottom: 12, fontSize: 13, color: "var(--accent2)" } }, formErr),
+
+    E("button", { className: "btn-primary", onClick: handleSave, disabled: saving, style: { marginBottom: 10 } },
+      saving ? "Saving..." : (existing ? "Update" : "Save Restaurant")
+    ),
+    E("button", { className: "btn-ghost", onClick: onCancel }, "Cancel")
+  );
+}
+
+// ======================================================
+// MY SPOTS TAB
+// ======================================================
+function SpotsTab(props) {
+  var restaurants = props.restaurants;
+  var onEdit = props.onEdit;
+  var onDelete = props.onDelete;
+
+  var _filter = useState("all"); var filter = _filter[0]; var setFilter = _filter[1];
+  var _search = useState(""); var search = _search[0]; var setSearch = _search[1];
+
+  var filtered = restaurants.filter(function(r) {
+    if (filter !== "all" && r.rating !== filter) return false;
+    if (search && r.name.toLowerCase().indexOf(search.toLowerCase()) < 0) return false;
+    return true;
+  });
+
+  // Group by city
+  var byCity = {};
+  filtered.forEach(function(r) {
+    var c = r.city || "Other";
+    if (!byCity[c]) byCity[c] = [];
+    byCity[c].push(r);
+  });
+  var cities = Object.keys(byCity).sort();
+
+  if (restaurants.length === 0) {
+    return E("div", null,
+      E("div", { className: "page-header" },
+        E("div", { className: "page-title" }, "My Spots")
+      ),
+      E("div", { className: "tab-content" },
+        E("div", { className: "empty-state" },
+          E("div", { className: "empty-icon" }, "🍽"),
+          E("div", { className: "empty-title" }, "No spots yet"),
+          E("div", { className: "empty-text" }, "Tap Rate to add your first restaurant")
+        )
+      )
+    );
+  }
+
+  return E("div", null,
+    E("div", { className: "page-header" },
+      E("div", { className: "page-title" },
+        "My Spots",
+        E("span", { className: "count-badge" }, restaurants.length)
+      )
+    ),
+    E("div", { className: "tab-content" },
+      E("div", { className: "search-wrap" },
+        E("input", {
+          type: "text", className: "search-inp",
+          placeholder: "Search your spots...",
+          value: search, onChange: function(e) { setSearch(e.target.value); }
+        })
+      ),
+      E("div", { className: "chip-row" },
+        [
+          { val: "all", label: "All" },
+          { val: "love", label: "❤️ Love" },
+          { val: "like", label: "👍 Like" },
+          { val: "pass", label: "👎 Pass" }
+        ].map(function(f) {
+          return E("button", { key: f.val, className: "chip" + (filter === f.val ? " active" : ""), onClick: function() { setFilter(f.val); } }, f.label);
+        })
+      ),
+      filtered.length === 0 && E("div", { className: "empty-state" },
+        E("div", { className: "empty-icon" }, "🔍"),
+        E("div", { className: "empty-title" }, "Nothing found"),
+        E("div", { className: "empty-text" }, "Try a different filter or search")
+      ),
+      cities.map(function(city) {
+        return E("div", { key: city },
+          cities.length > 1 && E("div", { className: "city-header" }, city),
+          E("div", { style: { padding: "4px 16px" } },
+            byCity[city].map(function(r) {
+              return E(SpotCard, { key: r.id, r: r, onEdit: onEdit, onDelete: onDelete });
+            })
+          )
+        );
+      })
+    )
+  );
+}
+
+function SpotCard(props) {
+  var r = props.r;
+  var onEdit = props.onEdit;
+  var onDelete = props.onDelete;
+  var _exp = useState(false); var expanded = _exp[0]; var setExpanded = _exp[1];
+
+  return E("div", { className: "card", style: { marginBottom: 10 }, onClick: function() { setExpanded(!expanded); } },
+    E("div", { className: "spot-card" },
+      r.photo_url
+        ? E("img", { src: r.photo_url, className: "spot-thumb", alt: r.name, onError: function(e) { e.target.style.display = "none"; } })
+        : E("div", { className: "spot-thumb-ph" }, "🍽"),
+      E("div", { style: { flex: 1, minWidth: 0 } },
+        E("div", { className: "spot-name" }, r.name),
+        E("div", { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" } },
+          E("span", { className: "badge badge-" + r.rating }, ratingLabel(r.rating)),
+          r.cuisine && E("span", { style: { fontSize: 12, color: "var(--text3)" } }, r.cuisine),
+          r.price_symbol && E("span", { style: { fontSize: 12, color: "var(--text3)" } }, r.price_symbol)
+        ),
+        r.frequency && E("div", { className: "spot-meta" }, freqLabel(r.frequency)),
+        r.notes && expanded && E("div", { className: "spot-notes" }, "\u201C" + r.notes + "\u201D")
+      )
+    ),
+    expanded && E("div", { className: "action-row" },
+      r.address && E("div", { style: { flex: 1, fontSize: 12, color: "var(--text3)", paddingLeft: 14, paddingTop: 4, lineHeight: 1.4 } }, r.address),
+      E("button", { className: "action-edit", onClick: function(e) { e.stopPropagation(); onEdit(r); } }, "Edit"),
+      E("button", { className: "action-del", onClick: function(e) { e.stopPropagation(); onDelete(r.id); } }, "Delete")
+    )
+  );
+}
+
+// ======================================================
+// RATE TAB
+// ======================================================
+function RateTab(props) {
+  var onSave = props.onSave;
+  return E("div", null,
+    E("div", { className: "page-header" },
+      E("div", { className: "page-title" }, "Rate a Restaurant"),
+      E("div", { className: "page-sub" }, "Save your experiences")
+    ),
+    E("div", { className: "tab-content" },
+      E(AddRestaurantForm, {
+        onSave: onSave,
+        onCancel: function() { props.onSwitchTab("spots"); }
+      })
+    )
+  );
+}
+
+// ======================================================
+// DATE MODAL
+// ======================================================
+function DateModal(props) {
+  var onSelect = props.onSelect;
+  var onClose = props.onClose;
+
+  var dateTypes = [
+    { key: "first", emoji: "🌟", title: "First Date", desc: "Fun atmosphere, good for conversation, not too serious. Moderate price, easy to get to." },
+    { key: "second", emoji: "✨", title: "Second Date", desc: "Step it up — shows thought and effort. Maybe a cuisine they mentioned liking." },
+    { key: "third", emoji: "🌹", title: "Third Date", desc: "Impressive, memorable, slightly upscale. Make it special." },
+    { key: "anniversary", emoji: "💫", title: "Anniversary", desc: "Pull out all the stops. Exceptional food, romantic setting." },
+    { key: "casual", emoji: "😌", title: "Casual Date", desc: "Low-key, no pressure, great vibes. Let the food do the talking." }
+  ];
+
+  return E("div", { className: "modal-overlay",
+    onMouseDown: function(e) { if (e.target === e.currentTarget) onClose(); },
+    onTouchEnd: function(e) { if (e.target === e.currentTarget) onClose(); }
+  },
+    E("div", { className: "modal-sheet" },
+      E("div", { className: "modal-handle" }),
+      E("div", { className: "modal-title" }, "What kind of date? 🌹"),
+      dateTypes.map(function(dt) {
+        return E("div", { key: dt.key, className: "date-opt",
+          onClick: function() { onSelect(dt.key + " — " + dt.title + ": " + dt.desc); }
+        },
+          E("div", { className: "date-opt-title" }, dt.emoji + " " + dt.title),
+          E("div", { className: "date-opt-desc" }, dt.desc)
+        );
+      })
+    )
+  );
+}
+
+// ======================================================
+// FIND TAB
+// ======================================================
+function FindTab(props) {
+  var restaurants = props.restaurants;
+
+  var _query = useState(""); var query = _query[0]; var setQuery = _query[1];
+  var _radius = useState(1600); var radius = _radius[0]; var setRadius = _radius[1];
+  var _cuisine = useState("any"); var cuisine = _cuisine[0]; var setCuisine = _cuisine[1];
+  var _price = useState("any"); var price = _price[0]; var setPrice = _price[1];
+  var _loading = useState(false); var loading = _loading[0]; var setLoading = _loading[1];
+  var _results = useState([]); var results = _results[0]; var setResults = _results[1];
+  var _aiPicks = useState(null); var aiPicks = _aiPicks[0]; var setAiPicks = _aiPicks[1];
+  var _err = useState(""); var err = _err[0]; var setErr = _err[1];
+  var _showDate = useState(false); var showDate = _showDate[0]; var setShowDate = _showDate[1];
+  var _dateCtx = useState(null); var dateCtx = _dateCtx[0]; var setDateCtx = _dateCtx[1];
+  var _status = useState(""); var status = _status[0]; var setStatus = _status[1];
+
+  var needsGKey = GOOGLE_KEY === "YOUR_GOOGLE_PLACES_API_KEY";
+  var needsCKey = CLAUDE_KEY === "YOUR_CLAUDE_API_KEY";
+
+  function handleFind() {
+    if (needsGKey) { setErr("Google Places API key needed for Find a Spot."); return; }
+    setLoading(true); setErr(""); setResults([]); setAiPicks(null);
+    setStatus("Getting your location...");
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      setStatus("Finding restaurants nearby...");
+      nearbySearch(lat, lng, radius).then(function(data) {
+        var places = data.places || [];
+        // Filter by cuisine and price
+        var filtered = places.filter(function(p) {
+          if (cuisine !== "any") {
+            var types = p.types || [];
+            var ct = p.primaryTypeDisplayName ? p.primaryTypeDisplayName.text.toLowerCase() : "";
+            var match = types.some(function(t) { return t.indexOf(cuisine.toLowerCase()) >= 0; })
+              || ct.indexOf(cuisine.toLowerCase()) >= 0;
+            if (!match) return false;
+          }
+          if (price !== "any") {
+            var pr = priceLvl(p.priceLevel);
+            if (pr.sym !== price) return false;
+          }
+          return true;
+        });
+        setResults(filtered);
+        if ((query || dateCtx) && !needsCKey && filtered.length > 0) {
+          setStatus("Getting AI recommendations...");
+          claudeFind(restaurants, filtered, query, dateCtx).then(function(cd) {
+            setLoading(false); setStatus("");
+            if (cd.content && cd.content[0]) {
+              try {
+                var txt = cd.content[0].text;
+                var start = txt.indexOf("[");
+                var end = txt.lastIndexOf("]") + 1;
+                var clean = (start >= 0 && end > start) ? txt.slice(start, end) : txt.trim();
+                var picks = JSON.parse(clean);
+                setAiPicks(picks);
+              } catch(e) { setAiPicks(null); }
+            }
+          }).catch(function() { setLoading(false); setStatus(""); });
+        } else {
+          setLoading(false); setStatus("");
+        }
+      }).catch(function() { setLoading(false); setStatus(""); setErr("Couldn't fetch restaurants."); });
+    }, function() {
+      setLoading(false); setStatus("");
+      setErr("Location access denied. Please allow location in Settings.");
+    }, { timeout: 10000 });
+  }
+
+  var cuisineOpts = [
+    { val: "any", label: "Any Cuisine" },
+    { val: "italian", label: "Italian" },
+    { val: "japanese", label: "Japanese" },
+    { val: "mexican", label: "Mexican" },
+    { val: "chinese", label: "Chinese" },
+    { val: "american", label: "American" },
+    { val: "thai", label: "Thai" },
+    { val: "indian", label: "Indian" },
+    { val: "mediterranean", label: "Mediterranean" },
+    { val: "seafood", label: "Seafood" }
+  ];
+  var priceOpts = [
+    { val: "any", label: "Any Price" },
+    { val: "$", label: "$" },
+    { val: "$$", label: "$$" },
+    { val: "$$$", label: "$$$" },
+    { val: "$$$$", label: "$$$$" }
+  ];
+  var distOpts = [
+    { val: 800, label: "0.5 mi" },
+    { val: 1600, label: "1 mi" },
+    { val: 4000, label: "2.5 mi" },
+    { val: 8000, label: "5 mi" }
+  ];
+
+  // Build display results with AI picks at top
+  var displayResults = results;
+  var aiTop = [];
+  if (aiPicks && aiPicks.length > 0) {
+    aiPicks.forEach(function(pick) {
+      var r = results[pick.index];
+      if (r) aiTop.push({ place: r, reason: pick.reason });
+    });
+  }
+
+  return E("div", null,
+    showDate && E(DateModal, {
+      onClose: function() { setShowDate(false); },
+      onSelect: function(ctx) { setDateCtx(ctx); setShowDate(false); }
+    }),
+    E("div", { className: "page-header" },
+      E("div", { style: { display: "flex", alignItems: "baseline", justifyContent: "space-between" } },
+        E("div", { className: "page-title" }, "Find a Spot"),
+        dateCtx && E("button", {
+          style: { fontSize: 12, color: "var(--love)", borderRadius: 20, border: "1px solid rgba(224,96,122,0.3)", padding: "4px 12px", background: "rgba(224,96,122,0.08)" },
+          onClick: function() { setDateCtx(null); }
+        }, "🌹 Date mode ✕")
+      )
+    ),
+    E("div", { className: "tab-content" },
+      (needsGKey || needsCKey) && E("div", { className: "setup-warn" },
+        needsGKey ? "⚠️ Add your Google Places API key (GOOGLE_KEY) to use Find a Spot." : "ℹ️ Add your Claude API key (CLAUDE_KEY) for AI-powered recommendations."
+      ),
+      E("div", { className: "find-controls" },
+        E("div", { className: "find-query-wrap" },
+          E("input", {
+            type: "text", className: "find-query",
+            placeholder: dateCtx ? "Any specific vibe or preferences?" : "What are you in the mood for?",
+            value: query, onChange: function(e) { setQuery(e.target.value); },
+            style: { fontSize: 16, paddingRight: 110 }
+          }),
+          E("button", { className: "date-btn-inline", onClick: function() { setShowDate(true); } }, "🌹 Date")
+        ),
+        dateCtx && E("div", {
+          style: { fontSize: 12, color: "var(--love)", lineHeight: 1.4, padding: "2px 4px", fontStyle: "italic" }
+        }, dateCtx.split(":")[0])
+      ),
+      E("div", { className: "chip-row" },
+        cuisineOpts.map(function(o) {
+          return E("button", { key: o.val, className: "chip" + (cuisine === o.val ? " active" : ""), onClick: function() { setCuisine(o.val); } }, o.label);
+        })
+      ),
+      E("div", { className: "chip-row" },
+        priceOpts.map(function(o) {
+          return E("button", { key: o.val, className: "chip" + (price === o.val ? " active" : ""), onClick: function() { setPrice(o.val); } }, o.label);
+        })
+      ),
+      E("div", { className: "chip-row" },
+        distOpts.map(function(o) {
+          return E("button", { key: o.val, className: "chip" + (radius === o.val ? " active" : ""), onClick: function() { setRadius(o.val); } }, o.label);
+        })
+      ),
+      E("div", { style: { padding: "4px 20px 12px" } },
+        E("button", { className: "find-go-btn", onClick: handleFind, disabled: loading },
+          loading ? (status || "Finding...") : "📍 Find Restaurants Near Me"
+        )
+      ),
+      loading && E("div", { style: { textAlign: "center", padding: 30 } },
+        E("div", { className: "spinner", style: { margin: "0 auto 12px" } }),
+        E("div", { style: { fontSize: 13, color: "var(--text3)" } }, status)
+      ),
+      err && E("div", { style: { margin: "0 20px", padding: "12px 14px", background: "rgba(201,71,42,0.1)", borderRadius: 10, fontSize: 13, color: "var(--accent2)" } }, err),
+
+      // AI picks at top
+      aiTop.length > 0 && E("div", { style: { padding: "0 16px 8px" } },
+        E("div", { style: { display: "flex", alignItems: "center", gap: 10, margin: "8px 0 12px" } },
+          E("div", { className: "ai-pill" }, "✦ Claude Picks"),
+          E("div", { style: { fontSize: 12, color: "var(--text3)" } }, "Based on your taste")
+        ),
+        aiTop.map(function(item) {
+          return E(FindCard, { key: item.place.id, place: item.place, reason: item.reason });
+        })
+      ),
+
+      // Rest of results
+      !loading && results.length > 0 && E("div", { style: { padding: "0 16px 8px" } },
+        aiTop.length > 0 && E("div", { style: { marginTop: 16, marginBottom: 12 } },
+          E("div", { style: { height: 1, background: "var(--border)", marginBottom: 14 } }),
+          E("div", { style: { fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: "0.12em" } }, "All nearby restaurants")
+        ),
+        results.map(function(p) {
+          return E(FindCard, { key: p.id, place: p });
+        })
+      ),
+
+      !loading && results.length === 0 && displayResults.length === 0 && !err && E("div", { className: "empty-state" },
+        E("div", { className: "empty-icon" }, "📍"),
+        E("div", { className: "empty-title" }, "Find your next spot"),
+        E("div", { className: "empty-text" }, "Use filters and tap Find to discover restaurants near you")
+      )
+    )
+  );
+}
+
+function FindCard(props) {
+  var p = props.place;
+  var reason = props.reason;
+  var pr = priceLvl(p.priceLevel);
+  var ph = p.photos && p.photos.length > 0 ? photoUrl(p.photos[0].name) : null;
+  var cu = p.primaryTypeDisplayName ? p.primaryTypeDisplayName.text : cuisineFromTypes(p.types);
+  return E("div", { className: "find-card" },
+    ph && E("img", { src: ph, className: "find-card-img", alt: p.displayName.text, onError: function(e) { e.target.style.display = "none"; } }),
+    E("div", { className: "find-card-body" },
+      E("div", { className: "find-card-name" }, p.displayName.text),
+      E("div", { className: "find-card-meta" },
+        [cu, pr.sym, p.rating ? ("★ " + p.rating + " Google") : null].filter(Boolean).join("  ·  ")
+      ),
+      p.formattedAddress && E("div", { style: { fontSize: 12, color: "var(--text3)", marginTop: 4 } }, p.formattedAddress),
+      reason && E("div", { className: "ai-reason" }, "\u201C" + reason + "\u201D")
+    )
+  );
+}
+
+// ======================================================
+// EDIT MODAL
+// ======================================================
+function EditModal(props) {
+  var existing = props.existing;
+  var onSave = props.onSave;
+  var onClose = props.onClose;
+  return E("div", { className: "modal-overlay",
+    onMouseDown: function(e) { if (e.target === e.currentTarget) onClose(); },
+    onTouchEnd: function(e) { if (e.target === e.currentTarget) onClose(); }
+  },
+    E("div", { className: "modal-sheet" },
+      E("div", { className: "modal-handle" }),
+      E("div", { className: "modal-title" }, "Edit " + existing.name),
+      E(AddRestaurantForm, {
+        existing: existing,
+        onSave: onSave,
+        onCancel: onClose
+      })
+    )
+  );
+}
+
+// ======================================================
+// MAIN APP
+// ======================================================
+function MainApp(props) {
+  var token = props.token;
+  var user = props.user;
+  var onLogout = props.onLogout;
+
+  var _tab = useState("spots"); var tab = _tab[0]; var setTab = _tab[1];
+  var _rests = useState([]); var restaurants = _rests[0]; var setRestaurants = _rests[1];
+  var _editing = useState(null); var editing = _editing[0]; var setEditing = _editing[1];
+  var _loaded = useState(false); var loaded = _loaded[0]; var setLoaded = _loaded[1];
+
+  var firstName = user && user.user_metadata ? user.user_metadata.first_name : "";
+
+  useEffect(function() {
+    sbGet("restaurants?select=*&order=created_at.desc", token).then(function(data) {
+      if (Array.isArray(data)) setRestaurants(data);
+      setLoaded(true);
+    }).catch(function() { setLoaded(true); });
+  }, [token]);
+
+  function handleSave(rec, existingId, setSaving) {
+    rec.user_id = user.id;
+    if (existingId) {
+      // Update
+      sbPatch("restaurants?id=eq." + existingId, rec, token).then(function(data) {
+        setSaving(false);
+        if (Array.isArray(data) && data.length > 0) {
+          setRestaurants(function(prev) { return prev.map(function(r) { return r.id === existingId ? data[0] : r; }); });
+          setEditing(null);
+        }
+      }).catch(function() { setSaving(false); });
+    } else {
+      // Check if same google_place_id already exists for this user
+      var gpid = rec.google_place_id;
+      var existing_r = gpid ? restaurants.find(function(r) { return r.google_place_id === gpid; }) : null;
+      if (existing_r) {
+        sbPatch("restaurants?id=eq." + existing_r.id, rec, token).then(function(data) {
+          setSaving(false);
+          if (Array.isArray(data) && data.length > 0) {
+            setRestaurants(function(prev) { return prev.map(function(r) { return r.id === existing_r.id ? data[0] : r; }); });
+            setTab("spots");
+          }
+        }).catch(function() { setSaving(false); });
+      } else {
+        sbPost("restaurants", rec, token).then(function(data) {
+          setSaving(false);
+          if (Array.isArray(data) && data.length > 0) {
+            setRestaurants(function(prev) { return [data[0]].concat(prev); });
+            setTab("spots");
+          } else if (data && data.id) {
+            setRestaurants(function(prev) { return [data].concat(prev); });
+            setTab("spots");
+          }
+        }).catch(function() { setSaving(false); });
+      }
+    }
+  }
+
+  function handleDelete(id) {
+    if (!window.confirm("Remove this restaurant?")) return;
+    sbDelete("restaurants?id=eq." + id, token).then(function() {
+      setRestaurants(function(prev) { return prev.filter(function(r) { return r.id !== id; }); });
+    });
+  }
+
+  var tabContent;
+  if (tab === "spots") {
+    tabContent = E(SpotsTab, { restaurants: restaurants, onEdit: function(r) { setEditing(r); }, onDelete: handleDelete });
+  } else if (tab === "rate") {
+    tabContent = E(RateTab, { onSave: handleSave, onSwitchTab: setTab });
+  } else if (tab === "find") {
+    tabContent = E(FindTab, { restaurants: restaurants });
+  }
+
+  return E("div", { className: "screen" },
+    tabContent,
+
+    editing && E(EditModal, {
+      existing: editing,
+      onSave: handleSave,
+      onClose: function() { setEditing(null); }
+    }),
+
+    E("div", { className: "bottom-nav" },
+      [
+        { key: "spots", icon: "🗂", label: "My Spots" },
+        { key: "rate", icon: "⭐", label: "Rate" },
+        { key: "find", icon: "🔍", label: "Find" }
+      ].map(function(t) {
+        return E("button", { key: t.key, className: "nav-btn" + (tab === t.key ? " active" : ""), onClick: function() { setTab(t.key); } },
+          E("span", { className: "nav-icon" }, t.icon),
+          E("span", null, t.label)
+        );
+      }),
+      E("button", { className: "nav-btn", onClick: onLogout, style: { maxWidth: 60 } },
+        E("span", { className: "nav-icon" }, "👤"),
+        E("span", null, firstName || "Out")
+      )
+    )
+  );
+}
+
+// ======================================================
+// APP ROOT
+// ======================================================
+function App() {
+  var _token = useState(null); var token = _token[0]; var setToken = _token[1];
+  var _user = useState(null); var user = _user[0]; var setUser = _user[1];
+
+  function handleLogin(t, u) { setToken(t); setUser(u); }
+  function handleLogout() { setToken(null); setUser(null); }
+
+  if (!token) {
+    return E(LoginScreen, { onLogin: handleLogin });
+  }
+  return E(MainApp, { token: token, user: user, onLogout: handleLogout });
+}
+
+ReactDOM.render(E(App), document.getElementById("root"));
+</script>
+</body>
+</html>
