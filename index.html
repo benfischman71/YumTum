@@ -2000,6 +2000,7 @@ function MainApp(props) {
   var firstName = user && user.user_metadata ? user.user_metadata.first_name : "";
 
   useEffect(function() {
+    if (!token) { setLoaded(true); return; }
     sbGet("restaurants?select=*&order=created_at.desc", token).then(function(data) {
       if (Array.isArray(data)) setRestaurants(data);
       setLoaded(true);
