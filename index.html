@@ -1511,11 +1511,40 @@ function FindTab(props) {
   function doSearchWithCtx(lat, lng, ctx) {
     console.log("[FindASpot] doSearchWithCtx called", lat, lng, "radius:", radius);
     setStatus("Finding restaurants nearby...");
-    nearbySearch(lat, lng, radius).then(function(data) {
-      console.log("[FindASpot] nearbySearch raw response:", JSON.stringify(data).slice(0, 400));
+
+    // Bad place types to always exclude
+    var BAD_TYPES = ["tourist_attraction", "bakery", "cafe", "coffee_shop", "fast_food_restaurant",
+      "meal_takeaway", "convenience_store", "supermarket", "food_court", "night_club", "bar"];
+
+    // If user typed a freeform query, use searchText with location bias for better relevance
+    var searchPromise;
+    if (query && query.trim()) {
+      var textQuery = query.trim() + " restaurant";
+      searchPromise = fetch("https://places.googleapis.com/v1/places:searchText", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": GOOGLE_KEY,
+          "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.priceLevel,places.photos,places.types,places.primaryTypeDisplayName"
+        },
+        body: JSON.stringify({
+          textQuery: textQuery,
+          maxResultCount: 20,
+          locationBias: {
+            circle: { center: { latitude: lat, longitude: lng }, radius: radius || 1600 }
+          },
+          includedType: "restaurant"
+        })
+      }).then(function(r) { return r.json(); });
+    } else {
+      searchPromise = nearbySearch(lat, lng, radius);
+    }
+
+    searchPromise.then(function(data) {
+      console.log("[FindASpot] search raw response:", JSON.stringify(data).slice(0, 400));
       if (data.error) {
         setLoading(false); setStatus("");
-        setErr("Google API error: " + (data.error.message || JSON.stringify(data.error)) + " - Check that your Google API key has Places API (New) enabled in the Google Cloud Console.");
+        setErr("Google API error: " + (data.error.message || JSON.stringify(data.error)));
         return;
       }
       var places = data.places || [];
@@ -1525,16 +1554,32 @@ function FindTab(props) {
         setErr("No restaurants found nearby. Try a larger radius or different location.");
         return;
       }
+
+      // Filter: exclude tourist attractions, bakeries, cafes, non-restaurants
       var filtered = places.filter(function(p) {
+        var types = p.types || [];
+        // Must have restaurant or food type
+        var isFood = types.some(function(t) {
+          return t === "restaurant" || t === "food" || t.indexOf("restaurant") >= 0;
+        });
+        if (!isFood) return false;
+        // Exclude bad types
+        var isBad = types.some(function(t) { return BAD_TYPES.indexOf(t) >= 0; });
+        if (isBad) return false;
+        // Cuisine filter
         if (cuisine !== "any") {
-          var types = p.types || [];
           var ct = p.primaryTypeDisplayName ? p.primaryTypeDisplayName.text.toLowerCase() : "";
           var match = types.some(function(t) { return t.indexOf(cuisine.toLowerCase()) >= 0; }) || ct.indexOf(cuisine.toLowerCase()) >= 0;
           if (!match) return false;
         }
+        // Price filter
         if (price !== "any") { var pr = priceLvl(p.priceLevel); if (pr.sym !== price) return false; }
         return true;
       });
+
+      // Sort by rating desc
+      filtered.sort(function(a, b) { return (b.rating || 0) - (a.rating || 0); });
+
       console.log("[FindASpot] filtered places:", filtered.length);
       setResults(filtered);
       if (filtered.length === 0) {
@@ -1549,7 +1594,7 @@ function FindTab(props) {
           setLoading(false); setStatus("");
           if (cd.error) {
             console.warn("[FindASpot] Claude error:", cd.error);
-            return; // still show results, just no AI picks
+            return;
           }
           if (cd.content && cd.content[0]) {
             try {
@@ -1568,9 +1613,9 @@ function FindTab(props) {
         setLoading(false); setStatus("");
       }
     }).catch(function(e) {
-      console.error("[FindASpot] nearbySearch fetch error:", e);
+      console.error("[FindASpot] search fetch error:", e);
       setLoading(false); setStatus("");
-      setErr("Network error reaching Google. Check your internet connection and that the Google API key has Places API (New) enabled at console.cloud.google.com.");
+      setErr("Network error reaching Google. Check your internet connection.");
     });
   }
 
