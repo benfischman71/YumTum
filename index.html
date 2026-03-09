@@ -227,6 +227,30 @@
     .find-go-btn:active { background: var(--accent2); }
     .price-sym { letter-spacing: 0; }
     .place-google-rating { color: #f5a623; font-size: 12px; }
+    .home-wrap { min-height: 100vh; display: flex; flex-direction: column; }
+    .home-header { padding-top: calc(54px + var(--safe-t)); padding-left: 24px; padding-right: 24px; padding-bottom: 10px; }
+    .home-logo { font-family: 'Cormorant Garamond', serif; font-size: 54px; font-weight: 300; line-height: 1; letter-spacing: -0.01em; }
+    .home-sub { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.16em; margin-top: 6px; }
+    .home-cards { flex: 1; padding: 12px 16px calc(48px + var(--safe-b)); display: flex; flex-direction: column; gap: 12px; }
+    .home-card { flex: 1; border-radius: 22px; display: flex; flex-direction: column; border: none; text-align: left; position: relative; overflow: hidden; transition: transform 0.15s; cursor: pointer; }
+    .home-card:active { transform: scale(0.975); }
+    .home-card-inner { flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 26px 28px 24px; }
+    .home-card-emoji { font-size: 34px; line-height: 1; margin-bottom: 14px; }
+    .home-card-name { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 400; line-height: 1; letter-spacing: -0.01em; }
+    .home-card-desc { font-size: 13px; margin-top: 7px; line-height: 1.5; color: var(--text3); }
+    .home-card-arrow { position: absolute; right: 24px; bottom: 28px; font-size: 26px; opacity: 0.22; }
+    .card-spots { background: linear-gradient(140deg, #1e1a16 0%, #27231f 100%); border: 1px solid #3a342e; }
+    .card-rate  { background: linear-gradient(140deg, #181e15 0%, #202820 100%); border: 1px solid #2e3828; }
+    .card-find  { background: linear-gradient(140deg, #2a1510 0%, #1e1008 100%); border: 1px solid rgba(201,71,42,0.45); box-shadow: 0 0 50px rgba(201,71,42,0.07); }
+    .date-big-btn { width: 100%; padding: 16px 20px; background: linear-gradient(135deg, rgba(224,96,122,0.16) 0%, rgba(201,71,42,0.14) 100%); border: 1.5px solid rgba(224,96,122,0.38); border-radius: 14px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s; }
+    .date-big-btn:active { opacity: 0.85; transform: scale(0.98); }
+    .date-big-btn.on { border-color: var(--love); background: linear-gradient(135deg, rgba(224,96,122,0.24) 0%, rgba(201,71,42,0.18) 100%); }
+    .date-big-emoji { font-size: 28px; line-height: 1; }
+    .date-big-text { flex: 1; text-align: left; }
+    .date-big-title { font-family: 'Cormorant Garamond', serif; font-size: 21px; color: var(--love); font-weight: 400; }
+    .date-big-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+    .date-big-arrow { font-size: 17px; color: var(--love); opacity: 0.55; }
+    .back-logo { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 300; color: var(--text3); padding: 2px 0; margin-bottom: 6px; display: block; letter-spacing: -0.01em; }
   </style>
 </head>
 <body>
@@ -855,7 +879,7 @@ function SpotsTab(props) {
   if (restaurants.length === 0) {
     return E("div", null,
       E("div", { className: "page-header" },
-        E("button", { onClick: onBack, style: { fontSize: 13, color: "var(--text3)", padding: "4px 0", marginBottom: 4 } }, "← Back"),
+        E("button", { onClick: onBack, className: "back-logo" }, "← YumTum"),
         E("div", { className: "page-title" }, "My Spots")
       ),
       E("div", { className: "tab-content" },
@@ -870,7 +894,7 @@ function SpotsTab(props) {
 
   return E("div", null,
     E("div", { className: "page-header" },
-      E("button", { onClick: onBack, style: { fontSize: 13, color: "var(--text3)", padding: "4px 0", marginBottom: 4 } }, "← Back"),
+      E("button", { onClick: onBack, className: "back-logo" }, "← YumTum"),
       E("div", { className: "page-title" },
         "My Spots",
         E("span", { className: "count-badge" }, restaurants.length)
@@ -951,6 +975,7 @@ function RateTab(props) {
   var onBack = props.onBack || function() {};
   return E("div", null,
     E("div", { className: "page-header" },
+      E("button", { onClick: onBack, className: "back-logo" }, "← YumTum"),
       E("div", { className: "page-title" }, "Rate a Restaurant"),
       E("div", { className: "page-sub" }, "Save your experiences")
     ),
@@ -1112,31 +1137,33 @@ function FindTab(props) {
       onSelect: function(ctx) { setDateCtx(ctx); setShowDate(false); }
     }),
     E("div", { className: "page-header" },
-      E("div", { style: { display: "flex", alignItems: "baseline", justifyContent: "space-between" } },
-        E("div", { className: "page-title" }, "Find a Spot"),
-        dateCtx && E("button", {
-          style: { fontSize: 12, color: "var(--love)", borderRadius: 20, border: "1px solid rgba(224,96,122,0.3)", padding: "4px 12px", background: "rgba(224,96,122,0.08)" },
-          onClick: function() { setDateCtx(null); }
-        }, "🌹 Date mode ✕")
-      )
+      E("button", { onClick: onBack, className: "back-logo" }, "← YumTum"),
+      E("div", { className: "page-title" }, "Find a Spot")
     ),
     E("div", { className: "tab-content" },
       (needsGKey || needsCKey) && E("div", { className: "setup-warn" },
         needsGKey ? "⚠️ Add your Google Places API key (GOOGLE_KEY) to use Find a Spot." : "ℹ️ Add your Claude API key (CLAUDE_KEY) for AI-powered recommendations."
       ),
       E("div", { className: "find-controls" },
+        E("button", {
+          className: "date-big-btn" + (dateCtx ? " on" : ""),
+          onClick: function() { dateCtx ? setDateCtx(null) : setShowDate(true); }
+        },
+          E("div", { className: "date-big-emoji" }, "🌹"),
+          E("div", { className: "date-big-text" },
+            E("div", { className: "date-big-title" }, dateCtx ? "Date mode on" : "Planning a date night?"),
+            E("div", { className: "date-big-sub" }, dateCtx ? "Tap to clear" : "AI picks for the occasion")
+          ),
+          E("div", { className: "date-big-arrow" }, dateCtx ? "×" : "›")
+        ),
         E("div", { className: "find-query-wrap" },
           E("input", {
             type: "text", className: "find-query",
-            placeholder: dateCtx ? "Any specific vibe or preferences?" : "What are you in the mood for?",
+            placeholder: dateCtx ? "Any vibe or preferences?" : "What are you in the mood for?",
             value: query, onChange: function(e) { setQuery(e.target.value); },
-            style: { fontSize: 16, paddingRight: 110 }
-          }),
-          E("button", { className: "date-btn-inline", onClick: function() { setShowDate(true); } }, "🌹 Date")
-        ),
-        dateCtx && E("div", {
-          style: { fontSize: 12, color: "var(--love)", lineHeight: 1.4, padding: "2px 4px", fontStyle: "italic" }
-        }, dateCtx.split(":")[0])
+            style: { fontSize: 16, paddingRight: 16 }
+          })
+        )
       ),
       E("div", { className: "chip-row" },
         cuisineOpts.map(function(o) {
@@ -1304,50 +1331,69 @@ function MainApp(props) {
 
   if (tab === "home") {
     var loveCount = restaurants.filter(function(r) { return r.rating === "love"; }).length;
-    var likeCount = restaurants.filter(function(r) { return r.rating === "like"; }).length;
-    return E("div", { style: { minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column" } },
-      E("div", { style: { paddingTop: "calc(52px + var(--safe-t))", paddingLeft: 24, paddingRight: 24, paddingBottom: 16 } },
+    var hr = new Date().getHours() + new Date().getMinutes() / 60;
+    var skyTop, skyBot, logoAccent;
+    if (hr < 6)       { skyTop="#05040a"; skyBot="#0a0810"; logoAccent="#6b5fa8"; }
+    else if (hr < 8)  { skyTop="#1a0e1f"; skyBot="#2d1506"; logoAccent="#e08050"; }
+    else if (hr < 12) { skyTop="#0d1520"; skyBot="#1a2a18"; logoAccent="#7ab870"; }
+    else if (hr < 16) { skyTop="#0e1822"; skyBot="#122018"; logoAccent="#5ba85a"; }
+    else if (hr < 19) { skyTop="#1f1008"; skyBot="#2a1510"; logoAccent="#e07040"; }
+    else if (hr < 21) { skyTop="#1a0a0f"; skyBot="#120a20"; logoAccent="#c0507a"; }
+    else              { skyTop="#05040a"; skyBot="#0a0810"; logoAccent="#7060c0"; }
+    return E("div", { className: "home-wrap", style: { background: "linear-gradient(175deg, " + skyTop + " 0%, " + skyBot + " 100%)" } },
+      E("div", { className: "home-header" },
         E("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" } },
           E("div", null,
-            E("div", { style: { fontSize: 13, color: "var(--text3)", marginBottom: 6 } }, firstName ? "Hey, " + firstName : "Welcome back"),
-            E("div", { className: "serif", style: { fontSize: 44, fontWeight: 300, lineHeight: 1 } }, "YumTum")
+            E("div", { style: { fontSize: 12, color: "var(--text3)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.14em" } },
+              firstName ? "Hey, " + firstName : "Welcome back"
+            ),
+            E("div", { className: "home-logo" },
+              E("span", { style: { color: "var(--text)" } }, "Yum"),
+              E("span", { style: { color: logoAccent } }, "Tum")
+            ),
+            E("div", { className: "home-sub" },
+              restaurants.length > 0 ? restaurants.length + " spots saved  \xb7  " + loveCount + " loved" : "Your personal restaurant guide"
+            )
           ),
-          E("button", { onClick: onLogout, style: { fontSize: 12, color: "var(--text3)", padding: "7px 14px", border: "1px solid var(--border)", borderRadius: 20, marginTop: 10 } }, "Sign out")
-        ),
-        restaurants.length > 0 && E("div", { style: { marginTop: 10, fontSize: 12, color: "var(--text3)" } },
-          restaurants.length + " spots saved"
+          E("button", { onClick: onLogout, style: {
+            fontSize: 11, color: "var(--text3)", padding: "6px 12px",
+            border: "1px solid var(--border)", borderRadius: 20, marginTop: 14,
+            letterSpacing: "0.06em", textTransform: "uppercase"
+          }}, "Sign out")
         )
       ),
-      E("div", { style: { flex: 1, padding: "8px 20px calc(44px + var(--safe-b))", display: "flex", flexDirection: "column", gap: 14 } },
-        E("button", { onClick: function() { setTab("spots"); }, style: {
-          flex: 1, background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: 20,
-          padding: "28px 26px", textAlign: "left", display: "flex", flexDirection: "column", justifyContent: "space-between"
-        }},
-          E("div", { style: { fontSize: 42 } }, "🗂"),
-          E("div", null,
-            E("div", { className: "serif", style: { fontSize: 30, fontWeight: 400, marginBottom: 5 } }, "My Spots"),
-            E("div", { style: { fontSize: 13, color: "var(--text3)" } }, restaurants.length === 0 ? "Your saved restaurants" : restaurants.length + " restaurants saved")
-          )
+      E("div", { className: "home-cards" },
+        E("button", { className: "home-card card-spots", onClick: function() { setTab("spots"); } },
+          E("div", { className: "home-card-inner" },
+            E("div", { className: "home-card-emoji" }, "🗂"),
+            E("div", null,
+              E("div", { className: "home-card-name" }, "My Spots"),
+              E("div", { className: "home-card-desc" },
+                restaurants.length === 0 ? "Your saved restaurants" : restaurants.length + " restaurants saved"
+              )
+            )
+          ),
+          E("div", { className: "home-card-arrow" }, "›")
         ),
-        E("button", { onClick: function() { setTab("rate"); }, style: {
-          flex: 1, background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: 20,
-          padding: "28px 26px", textAlign: "left", display: "flex", flexDirection: "column", justifyContent: "space-between"
-        }},
-          E("div", { style: { fontSize: 42 } }, "⭐"),
-          E("div", null,
-            E("div", { className: "serif", style: { fontSize: 30, fontWeight: 400, marginBottom: 5 } }, "Rate a New Spot"),
-            E("div", { style: { fontSize: 13, color: "var(--text3)" } }, "Add a restaurant to your list")
-          )
+        E("button", { className: "home-card card-rate", onClick: function() { setTab("rate"); } },
+          E("div", { className: "home-card-inner" },
+            E("div", { className: "home-card-emoji" }, "⭐"),
+            E("div", null,
+              E("div", { className: "home-card-name" }, "Rate a Spot"),
+              E("div", { className: "home-card-desc" }, "Add a restaurant to your list")
+            )
+          ),
+          E("div", { className: "home-card-arrow" }, "›")
         ),
-        E("button", { onClick: function() { setTab("find"); }, style: {
-          flex: 1, background: "rgba(201,71,42,0.07)", border: "1px solid rgba(201,71,42,0.28)", borderRadius: 20,
-          padding: "28px 26px", textAlign: "left", display: "flex", flexDirection: "column", justifyContent: "space-between"
-        }},
-          E("div", { style: { fontSize: 42 } }, "📍"),
-          E("div", null,
-            E("div", { className: "serif", style: { fontSize: 30, fontWeight: 400, marginBottom: 5, color: "var(--accent2)" } }, "Find a Spot"),
-            E("div", { style: { fontSize: 13, color: "var(--text3)" } }, "AI recommendations near you")
-          )
+        E("button", { className: "home-card card-find", onClick: function() { setTab("find"); } },
+          E("div", { className: "home-card-inner" },
+            E("div", { className: "home-card-emoji" }, "📍"),
+            E("div", null,
+              E("div", { className: "home-card-name", style: { color: "var(--accent2)" } }, "Find a Spot"),
+              E("div", { className: "home-card-desc" }, "AI recommendations near you")
+            )
+          ),
+          E("div", { className: "home-card-arrow", style: { color: "var(--accent2)", opacity: 0.45 } }, "›")
         )
       )
     );
