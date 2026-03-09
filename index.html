@@ -340,7 +340,7 @@ var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 // Get from console.cloud.google.com - enable "Places API (New)"
 var GOOGLE_KEY = "AIzaSyDgMtKeioylHoM9emFMFqfBSDk8pVjE65E";
 // Get from console.anthropic.com - optional, powers AI Find features
-var CLAUDE_KEY = "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";
+var CLAUDE_KEY = "sk-ant-api03-XTH...SQAA";
 
 // ======================================================
 // SUPABASE SQL (run this ONCE in your SQL editor)
@@ -581,13 +581,11 @@ function claudeFind(userHistory, nearby, query, dateContext) {
     + "\nPick the best 3. Be opinionated and specific. Skip bakeries/cafes for dates. Write reasons that name the specific quality that fits this date type (lighting, sharing format, vibe, price). "
     + "Return ONLY valid JSON: [{\"index\":0,\"name\":\"name\",\"reason\":\"specific 1-2 sentence reason\"}]";
 
-  return fetch("https://api.anthropic.com/v1/messages", {
+  return fetch(SUPABASE_URL + "/functions/v1/claude-proxy", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": CLAUDE_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
+      "Authorization": "Bearer " + SUPABASE_ANON_KEY,
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
@@ -1439,13 +1437,11 @@ function FindTab(props) {
         // Step 3: Claude API
         steps.push("3. Testing Claude API...");
         setDiag({ steps: steps.slice() });
-        fetch("https://api.anthropic.com/v1/messages", {
+        fetch(SUPABASE_URL + "/functions/v1/claude-proxy", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-api-key": CLAUDE_KEY,
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true"
+            "Authorization": "Bearer " + SUPABASE_ANON_KEY,
           },
           body: JSON.stringify({
             model: "claude-haiku-4-5-20251001",
