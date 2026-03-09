@@ -537,7 +537,7 @@ function nearbySearch(lat, lng, radius) {
       locationRestriction: {
         circle: {
           center: { latitude: lat, longitude: lng },
-          radius: radius || 1600
+          radius: Math.min(radius || 1600, 800)
         }
       }
     })
@@ -580,8 +580,18 @@ function claudeDirectedSearch(lat, lng, radius, dateContext, query, userHistory)
     var match = text.match(/\[[\s\S]*?\]/);
     if (!match) return null;
     var queries;
-    try { queries = JSON.parse(match[0]); } catch(e) { return null; }
+    try {
+      queries = JSON.parse(match[0]);
+    } catch(e) {
+      // Try to extract quoted strings manually
+      var qmatches = match[0].match(/"([^"]+)"/g);
+      if (qmatches) queries = qmatches.map(function(s) { return s.replace(/"/g, ""); });
+      else return null;
+    }
     if (!queries || !queries.length) return null;
+    // Ensure all queries are strings and not empty
+    queries = queries.filter(function(q) { return q && typeof q === "string" && q.trim().length > 2; });
+    if (!queries.length) return null;
 
     // Run all Google searches in parallel with location restriction
     var searchPromises = queries.map(function(q) {
@@ -596,7 +606,7 @@ function claudeDirectedSearch(lat, lng, radius, dateContext, query, userHistory)
           textQuery: q,
           maxResultCount: 8,
           locationRestriction: {
-            circle: { center: { latitude: lat, longitude: lng }, radius: Math.min(radius || 1600, 1200) }
+            circle: { center: { latitude: lat, longitude: lng }, radius: Math.min(radius || 1600, 600) }
           },
           includedType: "restaurant"
         })
@@ -1498,7 +1508,7 @@ function FindTab(props) {
         },
         body: JSON.stringify({
           includedTypes: ["restaurant"], maxResultCount: 3,
-          locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius: 1600 } }
+          locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius: 800 } }
         })
       }).then(function(r) { return r.json(); }).then(function(d) {
         if (d.error) {
@@ -1698,6 +1708,13 @@ function FindTab(props) {
                 .join("");
               var start = allText.lastIndexOf("["); var end = allText.lastIndexOf("]") + 1;
               var picks = JSON.parse((start >= 0 && end > start) ? allText.slice(start, end) : allText.trim());
+              // Strip any citation markup Claude may have added
+              picks = picks.map(function(p) {
+                if (p.reason) {
+                  p.reason = p.reason.replace(/<cite[^>]*>/g, "").replace(/<\/cite>/g, "").replace(/\s+/g, " ").trim();
+                }
+                return p;
+              });
               console.log("[FindASpot] AI picks:", picks);
               setAiPicks(picks);
             } catch(e) { console.warn("[FindASpot] JSON parse error:", e); setAiPicks(null); }
