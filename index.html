@@ -516,18 +516,29 @@ function claudeFind(userHistory, nearby, query, dateContext) {
     return i + ". " + p.displayName.text + " | " + ct + " | " + pr.sym + " | Google " + (p.rating || "?") + "/5 | " + (p.formattedAddress || "");
   }).join("\n");
 
+  var firstDateRules = "FIRST DATE - RANKING RULES: BEST picks: wine bars, tapas, izakayas, natural wine bars, gastropubs, any place with small sharing plates + real drinks. Sit-down pizza with wine/cocktails can work. NEVER recommend: bakeries (Magnolia Bakery etc - bright lights, no alcohol, wrong energy entirely), cafes, fast casual, fine dining/tasting menus (too formal, trapped, chemistry killer), loud clubs. Price sweet spot $$. Reasons should mention WHY it fits date 1 specifically.";
+  var secondDateRules = "SECOND DATE - Step up from date 1. Chef-driven spots, rooftops, places with a story. Reservation signals effort. Better wine list. Avoid chains and overly casual.";
+  var thirdDateRules = "THIRD DATE - This is the one they remember. Acclaimed, great atmosphere, wow factor. $$-$$$ is right. Be specific about why it creates a memorable night.";
+  var anniversaryRules = "ANNIVERSARY - Go all out. Fine dining, chef tables, tasting menus are correct here. Price secondary to experience. Only truly exceptional picks.";
+
+  var dateRules = dateContext
+    ? (dateContext.indexOf("First Date") >= 0 ? firstDateRules
+      : dateContext.indexOf("Second Date") >= 0 ? secondDateRules
+      : dateContext.indexOf("Third Date") >= 0 ? thirdDateRules
+      : dateContext.indexOf("Anniversary") >= 0 ? anniversaryRules : "")
+    : "";
+
   var contextLine = dateContext
-    ? "IMPORTANT - This is for a DATE NIGHT. User's date profile: " + dateContext
-      + " Use these preferences as hard requirements when ranking. Prioritize atmosphere, romance, and the specific vibe requested."
+    ? "DATE NIGHT. Type + preferences: " + dateContext + ". " + dateRules
     : "Context: " + (query || "General recommendation.");
 
-  var prompt = "You are a personalized restaurant recommendation assistant.\n\n"
-    + "User's restaurant history: " + histStr + "\n\n"
-    + "Nearby restaurants:\n" + nearbyStr + "\n\n"
+  var prompt = "You are an expert restaurant matchmaker for 20-30 year olds who understands dating psychology and venue science.\n\n"
+    + "User taste history: " + histStr + "\n\n"
+    + "Nearby options:\n" + nearbyStr + "\n\n"
     + contextLine + "\n"
-    + (query && dateContext ? "User's additional request: " + query + "\n" : "")
-    + "\nRecommend the best 3 from the nearby list based on the user's preferences and request. "
-    + "Return ONLY a JSON array, no other text: [{\"index\":0,\"name\":\"name\",\"reason\":\"1-2 sentence reason why this fits\"}]";
+    + (query ? "User also said: " + query + "\n" : "")
+    + "\nPick the best 3. Be opinionated and specific. Skip bakeries/cafes for dates. Write reasons that name the specific quality that fits this date type (lighting, sharing format, vibe, price). "
+    + "Return ONLY valid JSON: [{\"index\":0,\"name\":\"name\",\"reason\":\"specific 1-2 sentence reason\"}]";
 
   return fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -1031,19 +1042,21 @@ var DATE_PROFILES = {
   first: {
     emoji: "🌟",
     title: "First Date",
-    tagline: "The setting does the work",
-    insight: "The #1 mistake on first dates is choosing somewhere too quiet. Silence is brutal when you're still strangers. You want medium energy - ambient enough to ease nerves, calm enough to actually hear each other. The best first date spots feel cool but approachable, have something to look at, and make it easy to leave in 90 min or stay for 3 hours.",
+    tagline: "The venue does the heavy lifting",
+    insight: "Research on attraction (Dutton & Aron) shows mild novelty and light excitement get misattributed as chemistry - that's why a cool spot you've never been beats a safe chain every time. You need ~70dB noise: loud enough that silences don't sting, quiet enough to actually hear each other. Small sharing plates are key - passing food creates physical closeness and reciprocal warmth. The fancy restaurant is a trap: it spikes anxiety, you're locked in, the performance pressure kills chemistry. A bakery like Magnolia is wrong: bright lights, no alcohol, nowhere to really settle in. Sit-down pizza with good drinks? Actually works if the room is right.",
     tips: [
-      "Wine bars + small plates are the gold standard - sharing food creates intimacy fast",
-      "Bar seating beats booths - side-by-side is less intense than face-to-face",
-      "Walkable neighborhood = natural 'want to keep walking?' extension",
-      "Avoid garlic-heavy dishes, messy food (ribs, tacos), or anywhere with a wait"
+      "Wine bar + small plates is the research-backed winner: dim lighting, sharing food, pacing you control",
+      "A sit-down pizza spot with cocktails can totally work - if it's dimmer, not chaotic, has real tables",
+      "Fancy restaurants hurt first dates: the formality, being trapped, performance anxiety all kill chemistry",
+      "Bakeries/cafes are wrong: no alcohol means no social ease, bright lights mean nowhere to hide",
+      "Bar seating or small tables > booths - side-by-side feels less like a job interview than face-to-face"
     ],
+    rankingLogic: "FIRST DATE RANKING - BEST: wine bars, tapas bars, izakayas, natural wine bars, gastropubs, any place with small sharing plates and a real drinks program. GOOD: sit-down pizza with wine/cocktails, casual-upscale neighborhood spots with bar seating. BAD: fine dining (too formal, trapped), tasting menus (trapped, too long), bakeries/cafes (no alcohol, wrong vibe), fast casual (no effort signal), loud clubs (can't talk). If you see a bakery, cafe, or fast-casual in the list for a first date, SKIP IT. Price sweet spot is $$.",
     prefs: {
-      energy:  { label: "Energy level", opts: ["Medium - buzzy but talkable", "Lively - fun & distracting", "Low-key - quiet & chill"], def: ["Medium - buzzy but talkable"] },
-      format:  { label: "Best format",  opts: ["Wine bar + small plates", "Cocktail bar with food", "Casual-upscale restaurant", "Tapas / sharing plates", "Ramen or noodle spot"], def: ["Wine bar + small plates", "Cocktail bar with food"] },
+      energy:  { label: "Energy level", opts: ["Medium - buzzy but talkable", "Lively - fun & distracting", "Low-key - intimate & quiet"], def: ["Medium - buzzy but talkable"] },
+      format:  { label: "Ideal spot",   opts: ["Wine bar + small plates", "Tapas or izakaya", "Cool neighborhood restaurant", "Cocktail bar with food", "Sit-down pizza place"], def: ["Wine bar + small plates", "Tapas or izakaya"] },
       price:   { label: "Price range",  opts: ["$ under $30/person", "$$ $30-60/person", "$$$ $60-100/person"], def: ["$$ $30-60/person"] },
-      avoid:   { label: "Hard avoid",   opts: ["Super quiet fine dining", "Loud / club-y", "Messy food", "Hard to get to", "Long waits"], def: ["Super quiet fine dining", "Loud / club-y"] }
+      avoid:   { label: "Hard avoid",   opts: ["Fine dining / tasting menu", "Too loud to talk", "Bakery or cafe", "Fast casual / counter service", "Chain restaurants"], def: ["Fine dining / tasting menu", "Bakery or cafe"] }
     }
   },
   second: {
