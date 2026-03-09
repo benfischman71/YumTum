@@ -299,7 +299,7 @@ var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 // Get from console.cloud.google.com - enable "Places API (New)"
 var GOOGLE_KEY = "AIzaSyDgMtKeioylHoM9emFMFqfBSDk8pVjE65E";
 // Get from console.anthropic.com - optional, powers AI Find features
-var CLAUDE_KEY = "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";
+var CLAUDE_KEY = "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";
 
 // ======================================================
 // SUPABASE SQL (run this ONCE in your SQL editor)
@@ -1641,9 +1641,16 @@ function FindTab(props) {
             type: "text", className: "find-query",
             placeholder: dateCtx ? "Any vibe or preferences?" : "What are you in the mood for?",
             value: query, onChange: function(e) { setQuery(e.target.value); },
+            onKeyDown: function(e) { if (e.key === "Enter" && !loading) handleFind(); },
             style: { fontSize: 16, paddingRight: 16 }
           })
-        )
+        ),
+        E("button", {
+          className: "find-go-btn",
+          onClick: handleFind,
+          disabled: loading,
+          style: { marginTop: 2 }
+        }, loading ? (status || "Searching...") : "Search \u2192")
       ),
       E("div", { className: "chip-row" },
         cuisineOpts.map(function(o) {
