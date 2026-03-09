@@ -292,13 +292,13 @@
 <div id="root"></div>
 <script type="text/babel">
 // ======================================================
-// CONFIGURATION — edit before deploying
+// CONFIGURATION - edit before deploying
 // ======================================================
 var SUPABASE_URL = "https://ljdezniltcvpsjvsbahn.supabase.co";
 var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqZGV6bmlsdGN2cHNqdnNiYWhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMTA1MDIsImV4cCI6MjA4ODU4NjUwMn0.K3IKHtAzDK6qzDxxUVbJq8jKy9Trg9TLyAIM1WPzhHk";
-// Get from console.cloud.google.com — enable "Places API (New)"
+// Get from console.cloud.google.com - enable "Places API (New)"
 var GOOGLE_KEY = "AIzaSyDgMtKeioylHoM9emFMFqfBSDk8pVjE65E";
-// Get from console.anthropic.com — optional, powers AI Find features
+// Get from console.anthropic.com - optional, powers AI Find features
 var CLAUDE_KEY = "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";
 
 // ======================================================
@@ -517,7 +517,7 @@ function claudeFind(userHistory, nearby, query, dateContext) {
   }).join("\n");
 
   var contextLine = dateContext
-    ? "IMPORTANT — This is for a DATE NIGHT. User's date profile: " + dateContext
+    ? "IMPORTANT - This is for a DATE NIGHT. User's date profile: " + dateContext
       + " Use these preferences as hard requirements when ranking. Prioritize atmosphere, romance, and the specific vibe requested."
     : "Context: " + (query || "General recommendation.");
 
@@ -1032,15 +1032,15 @@ var DATE_PROFILES = {
     emoji: "🌟",
     title: "First Date",
     tagline: "The setting does the work",
-    insight: "The #1 mistake on first dates is choosing somewhere too quiet. Silence is brutal when you're still strangers. You want medium energy — ambient enough to ease nerves, calm enough to actually hear each other. The best first date spots feel cool but approachable, have something to look at, and make it easy to leave in 90 min or stay for 3 hours.",
+    insight: "The #1 mistake on first dates is choosing somewhere too quiet. Silence is brutal when you're still strangers. You want medium energy - ambient enough to ease nerves, calm enough to actually hear each other. The best first date spots feel cool but approachable, have something to look at, and make it easy to leave in 90 min or stay for 3 hours.",
     tips: [
-      "Wine bars + small plates are the gold standard — sharing food creates intimacy fast",
-      "Bar seating beats booths — side-by-side is less intense than face-to-face",
+      "Wine bars + small plates are the gold standard - sharing food creates intimacy fast",
+      "Bar seating beats booths - side-by-side is less intense than face-to-face",
       "Walkable neighborhood = natural 'want to keep walking?' extension",
       "Avoid garlic-heavy dishes, messy food (ribs, tacos), or anywhere with a wait"
     ],
     prefs: {
-      energy:  { label: "Energy level", opts: ["Medium — buzzy but talkable", "Lively — fun & distracting", "Low-key — quiet & chill"], def: ["Medium — buzzy but talkable"] },
+      energy:  { label: "Energy level", opts: ["Medium - buzzy but talkable", "Lively - fun & distracting", "Low-key - quiet & chill"], def: ["Medium - buzzy but talkable"] },
       format:  { label: "Best format",  opts: ["Wine bar + small plates", "Cocktail bar with food", "Casual-upscale restaurant", "Tapas / sharing plates", "Ramen or noodle spot"], def: ["Wine bar + small plates", "Cocktail bar with food"] },
       price:   { label: "Price range",  opts: ["$ under $30/person", "$$ $30-60/person", "$$$ $60-100/person"], def: ["$$ $30-60/person"] },
       avoid:   { label: "Hard avoid",   opts: ["Super quiet fine dining", "Loud / club-y", "Messy food", "Hard to get to", "Long waits"], def: ["Super quiet fine dining", "Loud / club-y"] }
@@ -1050,11 +1050,11 @@ var DATE_PROFILES = {
     emoji: "✨",
     title: "Second Date",
     tagline: "Show you actually listened",
-    insight: "They said yes again — that's real. The second date is about showing intention. Reference something from date 1: a cuisine they mentioned loving, a neighborhood they've never explored, a type of food they wanted to try. A reservation signals effort. The vibe should be a notch more intimate — better lighting, better wine list, somewhere with a story you can tell.",
+    insight: "They said yes again - that's real. The second date is about showing intention. Reference something from date 1: a cuisine they mentioned loving, a neighborhood they've never explored, a type of food they wanted to try. A reservation signals effort. The vibe should be a notch more intimate - better lighting, better wine list, somewhere with a story you can tell.",
     tips: [
-      "If they mentioned a food they love — go there. It shows you were paying attention",
+      "If they mentioned a food they love - go there. It shows you were paying attention",
       "A new neighborhood creates shared adventure, which builds connection faster",
-      "Make a reservation — it signals you planned ahead",
+      "Make a reservation - it signals you planned ahead",
       "Wine over cocktails tends to slow things down in a good way"
     ],
     prefs: {
@@ -1068,10 +1068,10 @@ var DATE_PROFILES = {
     emoji: "🌹",
     title: "Third Date",
     tagline: "Make it genuinely memorable",
-    insight: "The third date is the one people remember. By now you know each other enough to choose somewhere intentional. This is when a really great restaurant does real work — the atmosphere, the food, the service all send a message. Don't overthink it but do put in effort: make a reservation, choose a specific table if you can, maybe start with drinks somewhere nearby first. The restaurant should have something worth talking about.",
+    insight: "The third date is the one people remember. By now you know each other enough to choose somewhere intentional. This is when a really great restaurant does real work - the atmosphere, the food, the service all send a message. Don't overthink it but do put in effort: make a reservation, choose a specific table if you can, maybe start with drinks somewhere nearby first. The restaurant should have something worth talking about.",
     tips: [
-      "Book in advance — not being able to get in is a mood killer",
-      "Ask for a corner or window table when you reserve — details matter",
+      "Book in advance - not being able to get in is a mood killer",
+      "Ask for a corner or window table when you reserve - details matter",
       "Consider a pre-dinner drink first to arrive relaxed",
       "Somewhere with a great story (famous chef, incredible view, iconic space) gives you built-in conversation"
     ],
@@ -1086,12 +1086,12 @@ var DATE_PROFILES = {
     emoji: "💫",
     title: "Anniversary",
     tagline: "Pull out every stop",
-    insight: "Anniversary dinner = go all out, full stop. This is the one time where price is secondary to experience. A chef's tasting menu or counter seat is the move if you can get it — it becomes an event, not just dinner. Call ahead and tell them it's an anniversary; most good restaurants will do something. Order the wine pairing. Make the whole night feel like an occasion.",
+    insight: "Anniversary dinner = go all out, full stop. This is the one time where price is secondary to experience. A chef's tasting menu or counter seat is the move if you can get it - it becomes an event, not just dinner. Call ahead and tell them it's an anniversary; most good restaurants will do something. Order the wine pairing. Make the whole night feel like an occasion.",
     tips: [
-      "Call the restaurant — tell them it's your anniversary. Good places will go the extra mile",
+      "Call the restaurant - tell them it's your anniversary. Good places will go the extra mile",
       "Tasting menu removes all decision fatigue and makes it feel like an event",
       "Order the wine pairing. Just do it",
-      "Book 2-4 weeks out for top spots — don't leave it to the week of"
+      "Book 2-4 weeks out for top spots - don't leave it to the week of"
     ],
     prefs: {
       energy:  { label: "Energy level", opts: ["Exceptionally special", "Romantic & intimate", "Grand & celebratory"], def: ["Exceptionally special", "Romantic & intimate"] },
@@ -1103,10 +1103,10 @@ var DATE_PROFILES = {
   casual: {
     emoji: "😌",
     title: "Casual Hang",
-    tagline: "Vibes carry it — not the venue",
-    insight: "The underrated move: a daytime date. Brunch, a farmers market, coffee that turns into a walk — daylight removes pressure and the natural ending point is built in. If it's evening, a great neighborhood bar with food beats a 'trying-too-hard' restaurant every time. The goal is easy comfort, not impressing anyone.",
+    tagline: "Vibes carry it - not the venue",
+    insight: "The underrated move: a daytime date. Brunch, a farmers market, coffee that turns into a walk - daylight removes pressure and the natural ending point is built in. If it's evening, a great neighborhood bar with food beats a 'trying-too-hard' restaurant every time. The goal is easy comfort, not impressing anyone.",
     tips: [
-      "Brunch dates are criminally underused — cheaper, lighter, ends naturally",
+      "Brunch dates are criminally underused - cheaper, lighter, ends naturally",
       "Food hall / market = lots to talk about, easy to wander",
       "A great dive bar with surprisingly good food is a power move",
       "Outdoor seating in good weather beats any indoor option"
@@ -1159,7 +1159,7 @@ function DateWizard(props) {
       var sel = prefs[k] || [];
       if (sel.length > 0) prefParts.push(p.prefs[k].label + ": " + sel.join(", "));
     });
-    return p.title + " date. " + p.tagline + ". User preferences — " + prefParts.join("; ") + ". Key insight: " + p.insight.slice(0, 120);
+    return p.title + " date. " + p.tagline + ". User preferences - " + prefParts.join("; ") + ". Key insight: " + p.insight.slice(0, 120);
   }
 
   function handleGo() {
@@ -1184,7 +1184,7 @@ function DateWizard(props) {
         E("div", { className: "modal-handle" }),
         E("div", { style: { fontFamily: "Cormorant Garamond, serif", fontSize: 28, fontWeight: 400, marginBottom: 6 } }, "Which date is this? 🌹"),
         E("div", { style: { fontSize: 13, color: "var(--text3)", marginBottom: 22, lineHeight: 1.5 } },
-          "Tell us where you are — we'll tell you exactly what kind of place to pick."
+          "Tell us where you are - we'll tell you exactly what kind of place to pick."
         ),
         numberedTypes.map(function(dt) {
           return E("button", { key: dt.key, className: "dw-type-card", onClick: function() { pickType(dt.key); } },
@@ -1231,7 +1231,7 @@ function DateWizard(props) {
         )
       ),
 
-      E("div", { className: "dw-prefs-label" }, "Confirm your preferences — tap any to toggle"),
+      E("div", { className: "dw-prefs-label" }, "Confirm your preferences - tap any to toggle"),
 
       Object.keys(profile.prefs).map(function(k) {
         var section = profile.prefs[k];
@@ -1314,10 +1314,10 @@ function FindTab(props) {
         })
       }).then(function(r) { return r.json(); }).then(function(d) {
         if (d.error) {
-          steps.push("   ❌ Google error: " + d.error.status + " — " + d.error.message);
+          steps.push("   ❌ Google error: " + d.error.status + " - " + d.error.message);
           steps.push("   ↳ Fix: Go to console.cloud.google.com → Enable 'Places API (New)' for key AIzaSyDg...");
         } else if (!d.places || d.places.length === 0) {
-          steps.push("   ⚠️ Google returned 0 restaurants (no error — just empty area?)");
+          steps.push("   ⚠️ Google returned 0 restaurants (no error - just empty area?)");
         } else {
           steps.push("   ✅ Google returned " + d.places.length + " restaurants");
           steps.push("      e.g. " + d.places[0].displayName.text);
@@ -1348,18 +1348,18 @@ function FindTab(props) {
           } else {
             steps.push("   ⚠️ Claude returned unexpected format: " + JSON.stringify(cd).slice(0, 80));
           }
-          steps.push("— Diagnostic complete —");
+          steps.push("- Diagnostic complete -");
           setDiag({ steps: steps.slice() });
           setDiagLoading(false);
         }).catch(function(e) {
           steps.push("   ❌ Claude network error: " + e.message);
-          steps.push("— Diagnostic complete —");
+          steps.push("- Diagnostic complete -");
           setDiag({ steps: steps.slice() });
           setDiagLoading(false);
         });
       }).catch(function(e) {
         steps.push("   ❌ Google network error: " + e.message);
-        steps.push("— Diagnostic complete —");
+        steps.push("- Diagnostic complete -");
         setDiag({ steps: steps.slice() });
         setDiagLoading(false);
       });
@@ -1367,7 +1367,7 @@ function FindTab(props) {
       steps.push("   ❌ Location denied/failed: " + geoErr.message + " (code " + geoErr.code + ")");
       steps.push("   ↳ Fix: Allow location in browser settings and try again");
       steps.push("   ↳ Or use 'A Neighborhood' mode and type your location");
-      steps.push("— Diagnostic complete —");
+      steps.push("- Diagnostic complete -");
       setDiag({ steps: steps.slice() });
       setDiagLoading(false);
     }, { timeout: 10000 });
@@ -1403,7 +1403,7 @@ function FindTab(props) {
       console.log("[YumTum] nearbySearch raw response:", JSON.stringify(data).slice(0, 400));
       if (data.error) {
         setLoading(false); setStatus("");
-        setErr("Google API error: " + (data.error.message || JSON.stringify(data.error)) + " — Check that your Google API key has Places API (New) enabled in the Google Cloud Console.");
+        setErr("Google API error: " + (data.error.message || JSON.stringify(data.error)) + " - Check that your Google API key has Places API (New) enabled in the Google Cloud Console.");
         return;
       }
       var places = data.places || [];
@@ -1562,7 +1562,7 @@ function FindTab(props) {
                   doSearchWithCtx(pos.coords.latitude, pos.coords.longitude, dateCtx);
                 }, function() {
                   setLoading(false); setStatus("");
-                  setErr("Location access denied — please allow location in your browser settings, or type a neighborhood below.");
+                  setErr("Location access denied - please allow location in your browser settings, or type a neighborhood below.");
                 }, { timeout: 12000 });
               },
               disabled: loading,
@@ -1804,63 +1804,64 @@ function MainApp(props) {
     var loveCount = restaurants.filter(function(r) { return r.rating === "love"; }).length;
     var hr = new Date().getHours() + new Date().getMinutes() / 60;
     var skyTop, skyBot, logoAccent, cardBg, cardBorder, textColor, textShadow;
-    // Genuine sky colors — bright where the sky is bright, dark where it's dark
+    // Genuine sky colors - bright where the sky is bright, dark where it's dark
     if (hr < 5) {
-      // Deep night — true midnight navy
+      // Deep night - true midnight navy
       skyTop="#05080f"; skyBot="#090c1e";
       logoAccent="#a090e0"; cardBg="rgba(12,10,28,0.72)"; cardBorder="rgba(160,144,224,0.18)";
       textColor="#d8d0f8"; textShadow="0 1px 8px rgba(0,0,0,0.8)";
     } else if (hr < 6.5) {
-      // Pre-dawn — inky blue softening to deep violet
+      // Pre-dawn - inky blue softening to deep violet
       skyTop="#180c2a"; skyBot="#2a1040";
       logoAccent="#e080c0"; cardBg="rgba(20,8,36,0.68)"; cardBorder="rgba(224,128,192,0.2)";
       textColor="#f0d8f0"; textShadow="0 1px 8px rgba(0,0,0,0.7)";
     } else if (hr < 7.5) {
-      // Sunrise — coral, peach, rose blazing up from the horizon
+      // Sunrise - coral, peach, rose blazing up from the horizon
       skyTop="#c04030"; skyBot="#f0803a";
       logoAccent="#ffe080"; cardBg="rgba(60,15,10,0.62)"; cardBorder="rgba(255,224,128,0.28)";
       textColor="#fff0d8"; textShadow="0 1px 10px rgba(80,10,0,0.6)";
     } else if (hr < 9.5) {
-      // Early morning — warm amber sky fading into pale gold-blue
+      // Early morning - warm amber sky fading into pale gold-blue
       skyTop="#e8a030"; skyBot="#a0c8e8";
       logoAccent="#ffffff"; cardBg="rgba(40,25,0,0.58)"; cardBorder="rgba(255,255,255,0.22)";
       textColor="#fff8e8"; textShadow="0 1px 10px rgba(60,30,0,0.5)";
     } else if (hr < 12) {
-      // Mid-morning — clear fresh sky blue, lots of light
+      // Mid-morning - clear fresh sky blue, lots of light
       skyTop="#5ab0e8"; skyBot="#90d0f0";
       logoAccent="#ffffff"; cardBg="rgba(10,30,55,0.58)"; cardBorder="rgba(255,255,255,0.22)";
       textColor="#ffffff"; textShadow="0 1px 8px rgba(0,30,80,0.4)";
     } else if (hr < 14.5) {
-      // Midday — vivid peak blue, bright and hot
+      // Midday - vivid peak blue, bright and hot
       skyTop="#2888d8"; skyBot="#60b8f0";
       logoAccent="#ffffff"; cardBg="rgba(8,28,58,0.6)"; cardBorder="rgba(255,255,255,0.2)";
       textColor="#ffffff"; textShadow="0 1px 8px rgba(0,20,70,0.45)";
     } else if (hr < 17) {
-      // Afternoon — slightly warmer deeper blue, still very bright
+      // Afternoon - slightly warmer deeper blue, still very bright
       skyTop="#3070c0"; skyBot="#70a8e0";
       logoAccent="#ffe870"; cardBg="rgba(10,24,52,0.6)"; cardBorder="rgba(255,232,112,0.22)";
       textColor="#f0f6ff"; textShadow="0 1px 8px rgba(0,15,60,0.45)";
     } else if (hr < 19) {
-      // Golden hour — the magic hour, amber and gold flooding everything
+      // Golden hour - the magic hour, amber and gold flooding everything
       skyTop="#d86018"; skyBot="#f0a030";
       logoAccent="#fff0a0"; cardBg="rgba(55,20,0,0.6)"; cardBorder="rgba(255,240,160,0.28)";
       textColor="#fff4d0"; textShadow="0 1px 10px rgba(80,25,0,0.55)";
     } else if (hr < 20.5) {
-      // Dusk — deep coral fading into rich purple-magenta
+      // Dusk - deep coral fading into rich purple-magenta
       skyTop="#9020a0"; skyBot="#c84060";
       logoAccent="#ffc0e0"; cardBg="rgba(30,6,35,0.65)"; cardBorder="rgba(255,192,224,0.2)";
       textColor="#ffe8f8"; textShadow="0 1px 10px rgba(40,0,50,0.6)";
     } else if (hr < 22) {
-      // Early evening — deep indigo twilight
+      // Early evening - deep indigo twilight
       skyTop="#1a1060"; skyBot="#2a1848";
       logoAccent="#c0a0f8"; cardBg="rgba(12,8,40,0.68)"; cardBorder="rgba(192,160,248,0.18)";
       textColor="#e0d8ff"; textShadow="0 1px 8px rgba(0,0,0,0.6)";
     } else {
-      // Night — back to deep navy-black
+      // Night - back to deep navy-black
       skyTop="#05080f"; skyBot="#090c1e";
       logoAccent="#a090e0"; cardBg="rgba(12,10,28,0.72)"; cardBorder="rgba(160,144,224,0.18)";
       textColor="#d8d0f8"; textShadow="0 1px 8px rgba(0,0,0,0.8)";
     }
+    var findCardBorder = "1px solid " + cardBorder;
     return E("div", { className: "home-wrap", style: { background: "linear-gradient(175deg, " + skyTop + " 0%, " + skyBot + " 100%)" } },
       E("div", { className: "home-header" },
         E("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" } },
@@ -1912,7 +1913,7 @@ function MainApp(props) {
           E("div", { className: "home-card-arrow", style: { color: textColor, opacity: 0.35 } }, "›")
         ),
         E("button", { className: "home-card", onClick: function() { setTab("find"); },
-          style: { background: cardBg, border: "1px solid " + logoAccent.replace("#","rgba(").replace(/(..)(..)(..)/, function(m,r,g,b){ return parseInt(r,16)+","+parseInt(g,16)+","+parseInt(b,16); }) + ",0.35)", backdropFilter: "blur(16px)" }
+          style: { background: cardBg, border: findCardBorder, backdropFilter: "blur(16px)" }
         },
           E("div", { className: "home-card-inner" },
             E("div", { className: "home-card-emoji" }, "📍"),
