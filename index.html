@@ -1605,7 +1605,7 @@ function FindTab(props) {
       "brunch_restaurant", "breakfast_restaurant"];
 
     // Also filter by name for known tourist traps
-    var BAD_NAME_FRAGMENTS = ["rooftop restaurant at rh", "cheesecake factory", "olive garden",
+    var BAD_NAME_FRAGMENTS = ["rh rooftop", "cheesecake factory", "olive garden",
       "applebee", "chili's", "tgi friday", "red lobster", "outback"];
 
     // If date context active, use Claude-directed search for smarter results
@@ -1677,6 +1677,9 @@ function FindTab(props) {
         var nameLower = (p.displayName && p.displayName.text ? p.displayName.text.toLowerCase() : "");
         var isNameBad = BAD_NAME_FRAGMENTS.some(function(frag) { return nameLower.indexOf(frag) >= 0; });
         if (isNameBad) return false;
+        // Filter pizza places by name/type (catches pizzerias not tagged pizza_restaurant)
+        var typeName = (p.primaryTypeDisplayName && p.primaryTypeDisplayName.text ? p.primaryTypeDisplayName.text.toLowerCase() : "");
+        if (typeName.indexOf("pizza") >= 0 || nameLower.indexOf("pizzeria") >= 0) return false;
         // Must have a decent rating
         if (p.rating && p.rating < 4.0) return false;
         // Cuisine filter
