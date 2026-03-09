@@ -545,7 +545,7 @@ function nearbySearch(lat, lng, radius) {
 }
 
 // Claude-directed search: Claude picks the search queries, Google executes, Claude ranks
-function claudeDirectedSearch(lat, lng, radius, dateContext, query, userHistory) {
+function claudeDirectedSearch(lat, lng, radius, dateContext, query, userHistory, nearby) {
   var histStr = userHistory.length === 0 ? "No history yet."
     : userHistory.map(function(r) {
         return r.name + ": " + ratingLabel(r.rating) + (r.cuisine ? " (" + r.cuisine + ")" : "");
@@ -559,13 +559,13 @@ function claudeDirectedSearch(lat, lng, radius, dateContext, query, userHistory)
       : dateContext.indexOf("Casual") >= 0 ? "casual hang" : "date")
     : "dinner";
 
-  var queryPrompt = "You are a NYC restaurant expert helping someone pick a " + dateType + " spot."
-    + " User taste history: " + histStr + "."
-    + (query ? " They also said: " + query + "." : "")
-    + " Generate 4 specific Google Places search queries to find the BEST, coolest, most interesting restaurants for this occasion."
-    + " For a first date: target natural wine bars, izakayas, cool tapas spots, hip gastropubs - NOT chains, NOT tourist spots, NOT boring classics."
-    + " Each query should target a specific TYPE of cool place that would work for a " + dateType + "."
-    + " Return ONLY a JSON array of 4 search query strings like: [natural wine bar west village, izakaya lower east side]";
+  var nearLoc = nearby && nearby.length > 0 && nearby[0].formattedAddress ? nearby[0].formattedAddress.split(",").slice(1,3).join(",").trim() : "NYC";
+  var queryPrompt = "You are an expert restaurant scout. Generate 3 Google Places text search queries to find the best " + dateType + " restaurants near: " + nearLoc + "."
+    + (query ? " User wants: " + query + "." : "")
+    + " For a first date: natural wine bars, izakayas, cool tapas spots, small plates gastropubs. For second/third date: chef-driven spots, acclaimed restaurants. For casual: fun neighborhood spots."
+    + " Make each query short and specific (3-6 words). Include the city/neighborhood name."
+    + " Return ONLY a valid JSON array of strings, e.g.: [\"natural wine bar west village\", \"izakaya chelsea nyc\", \"tapas bar greenwich village\"]"
+    + " Nothing else - just the JSON array.";
 
   return fetch(SUPABASE_URL + "/functions/v1/claude-proxy", {
     method: "POST",
@@ -1600,13 +1600,18 @@ function FindTab(props) {
     // Bad place types to always exclude
     var BAD_TYPES = ["tourist_attraction", "bakery", "cafe", "coffee_shop", "fast_food_restaurant",
       "meal_takeaway", "meal_delivery", "convenience_store", "supermarket", "food_court",
-      "night_club", "bar", "sandwich_shop", "hamburger_restaurant",
-      "ice_cream_shop", "donut_shop", "drugstore", "grocery_store"];
+      "night_club", "bar", "sandwich_shop", "hamburger_restaurant", "pizza_restaurant",
+      "ice_cream_shop", "donut_shop", "drugstore", "grocery_store", "hotel_restaurant",
+      "brunch_restaurant", "breakfast_restaurant"];
+
+    // Also filter by name for known tourist traps
+    var BAD_NAME_FRAGMENTS = ["rooftop restaurant at rh", "cheesecake factory", "olive garden",
+      "applebee", "chili's", "tgi friday", "red lobster", "outback"];
 
     // If date context active, use Claude-directed search for smarter results
     if (ctx && !query) {
       setStatus("Claude is curating the perfect spots...");
-      claudeDirectedSearch(lat, lng, radius, ctx, query, restaurants).then(function(places) {
+      claudeDirectedSearch(lat, lng, radius, ctx, query, restaurants, filtered).then(function(places) {
         if (!places || places.length === 0) {
           // Fallback to regular nearby search
           nearbySearch(lat, lng, radius).then(function(data) { processPlaces(data.places || [], ctx); });
@@ -1668,6 +1673,10 @@ function FindTab(props) {
         // Exclude bad types
         var isBad = types.some(function(t) { return BAD_TYPES.indexOf(t) >= 0; });
         if (isBad) return false;
+        // Filter by bad name fragments (tourist traps, chains)
+        var nameLower = (p.displayName && p.displayName.text ? p.displayName.text.toLowerCase() : "");
+        var isNameBad = BAD_NAME_FRAGMENTS.some(function(frag) { return nameLower.indexOf(frag) >= 0; });
+        if (isNameBad) return false;
         // Must have a decent rating
         if (p.rating && p.rating < 4.0) return false;
         // Cuisine filter
