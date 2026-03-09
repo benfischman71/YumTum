@@ -1661,9 +1661,6 @@ function FindTab(props) {
           return E("div", { key: i, style: { fontSize: 12, color: s.indexOf("✅") >= 0 ? "#5aab72" : s.indexOf("❌") >= 0 ? "#e05a38" : s.indexOf("⚠️") >= 0 ? "#f5a623" : "var(--text3)", fontFamily: "monospace", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-all" } }, s);
         })
       ),
-        E("div", { className: "spinner", style: { margin: "0 auto 10px" } }),
-        E("div", { style: { fontSize: 13, color: "var(--text3)" } }, status)
-      ),
 
       // AI picks at top
       aiTop.length > 0 && E("div", { style: { padding: "0 16px 8px" } },
