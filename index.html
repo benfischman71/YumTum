@@ -198,6 +198,36 @@
     }
     .date-opt:active { border-color: var(--accent); background: var(--accent-dim2); }
     .date-opt-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; margin-bottom: 4px; }
+    /* DATE WIZARD */
+    .dw-type-card {
+      width: 100%; padding: 18px 16px; border-radius: 14px; border: 1.5px solid var(--border2);
+      margin-bottom: 10px; cursor: pointer; transition: all 0.18s; text-align: left;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .dw-type-card:active { transform: scale(0.98); }
+    .dw-type-card.sel { border-color: var(--love); background: rgba(224,96,122,0.08); }
+    .dw-type-emoji { font-size: 28px; line-height: 1; flex-shrink: 0; }
+    .dw-type-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; }
+    .dw-type-tag { font-size: 12px; color: var(--text3); margin-top: 2px; }
+    .dw-section { margin-bottom: 20px; }
+    .dw-section-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 10px; }
+    .dw-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .dw-chip {
+      padding: 8px 15px; border-radius: 20px; font-size: 13px; border: 1.5px solid var(--border2);
+      color: var(--text2); cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .dw-chip.on { border-color: var(--love); background: rgba(224,96,122,0.12); color: var(--love); }
+    .dw-chip:active { opacity: 0.75; }
+    .dw-go-btn {
+      width: 100%; padding: 17px; border-radius: 13px; margin-top: 8px;
+      background: linear-gradient(135deg, #c0405a 0%, #c9472a 100%);
+      color: #fff; font-size: 16px; font-weight: 500; letter-spacing: 0.02em;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .dw-go-btn:active { opacity: 0.88; transform: scale(0.98); }
+    .dw-back { font-size: 13px; color: var(--text3); padding: 6px 0; margin-bottom: 14px; display: flex; align-items: center; gap: 5px; }
+    .dw-headline { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 400; margin-bottom: 4px; }
+    .dw-subline { font-size: 13px; color: var(--text3); line-height: 1.6; margin-bottom: 20px; }
     .date-opt-desc { font-size: 13px; color: var(--text3); line-height: 1.5; }
     .city-header { padding: 8px 20px 4px; font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; }
     .filter-row { display: flex; gap: 8px; overflow-x: auto; padding: 10px 20px; -ms-overflow-style: none; scrollbar-width: none; }
@@ -481,7 +511,8 @@ function claudeFind(userHistory, nearby, query, dateContext) {
   }).join("\n");
 
   var contextLine = dateContext
-    ? "Context: This is for a date night. Date type: " + dateContext + ". Prioritize atmosphere, romance, and experience."
+    ? "IMPORTANT — This is for a DATE NIGHT. User's date profile: " + dateContext
+      + " Use these preferences as hard requirements when ranking. Prioritize atmosphere, romance, and the specific vibe requested."
     : "Context: " + (query || "General recommendation.");
 
   var prompt = "You are a personalized restaurant recommendation assistant.\n\n"
@@ -988,35 +1019,179 @@ function RateTab(props) {
 }
 
 // ======================================================
-// DATE MODAL
+// DATE WIZARD
 // ======================================================
-function DateModal(props) {
-  var onSelect = props.onSelect;
+var DATE_PROFILES = {
+  first: {
+    emoji: "🌟", title: "First Date",
+    tagline: "Exciting, not intimidating",
+    headline: "First dates work best when...",
+    subline: "The setting does the heavy lifting — lively enough to ease nerves, chill enough to actually talk. These are the defaults that tend to land. Tap any to toggle.",
+    prefs: {
+      vibe:    { label: "Vibe",      opts: ["Lively & fun", "Cozy & casual", "Cool & trendy", "Low-key"], def: ["Lively & fun", "Cool & trendy"] },
+      convo:   { label: "Priority",  opts: ["Easy conversation", "Impressive food", "Great cocktails", "Interesting neighborhood"], def: ["Easy conversation", "Great cocktails"] },
+      price:   { label: "Price",     opts: ["$", "$$", "$$$", "$$$$"], def: ["$$"] },
+      setting: { label: "Setting",   opts: ["Restaurant", "Wine bar", "Gastropub", "Rooftop", "Speakeasy"], def: ["Restaurant", "Wine bar"] },
+      avoid:   { label: "Avoid",     opts: ["Too loud / club-y", "Too stuffy / formal", "Messy food", "Very dark / intimate"], def: ["Too loud / club-y", "Too stuffy / formal"] }
+    }
+  },
+  second: {
+    emoji: "✨", title: "Second Date",
+    tagline: "Show you paid attention",
+    headline: "Second dates signal intention.",
+    subline: "You've broken the ice. Now show some thought — a cooler neighborhood, a better bottle, a place with a story. Dial up the atmosphere a notch.",
+    prefs: {
+      vibe:    { label: "Vibe",      opts: ["Intimate & warm", "Chic & stylish", "Adventurous cuisine", "Great wine list"], def: ["Intimate & warm", "Great wine list"] },
+      convo:   { label: "Priority",  opts: ["Memorable experience", "Great food quality", "Romantic lighting", "Interesting story"], def: ["Memorable experience", "Romantic lighting"] },
+      price:   { label: "Price",     opts: ["$", "$$", "$$$", "$$$$"], def: ["$$", "$$$"] },
+      setting: { label: "Setting",   opts: ["Restaurant", "Wine bar", "Chef's counter", "Rooftop", "Speakeasy"], def: ["Restaurant", "Rooftop"] },
+      avoid:   { label: "Avoid",     opts: ["Chain or generic", "Too noisy", "Overly casual", "Hard to find"], def: ["Chain or generic", "Too noisy"] }
+    }
+  },
+  third: {
+    emoji: "🌹", title: "Third Date",
+    tagline: "Make it memorable",
+    headline: "Third date = real statement.",
+    subline: "This is the one she or he will remember. Somewhere genuinely impressive — great food, real atmosphere, maybe even a reservation. Pull it together.",
+    prefs: {
+      vibe:    { label: "Vibe",      opts: ["Romantic & impressive", "Upscale-casual", "Chef-driven", "Classic & elegant"], def: ["Romantic & impressive", "Chef-driven"] },
+      convo:   { label: "Priority",  opts: ["Best food possible", "Wow-factor setting", "Exceptional service", "Intimate table"], def: ["Best food possible", "Wow-factor setting"] },
+      price:   { label: "Price",     opts: ["$", "$$", "$$$", "$$$$"], def: ["$$$", "$$$$"] },
+      setting: { label: "Setting",   opts: ["Restaurant", "Wine bar", "Tasting menu", "Chef's counter", "Private room"], def: ["Restaurant", "Tasting menu"] },
+      avoid:   { label: "Avoid",     opts: ["Casual or cheap feel", "Bad service", "Loud & chaotic", "Boring location"], def: ["Casual or cheap feel", "Loud & chaotic"] }
+    }
+  },
+  anniversary: {
+    emoji: "💫", title: "Anniversary",
+    tagline: "All the stops",
+    headline: "This one matters.",
+    subline: "Anniversary dinners are about the feeling — being seen, celebrated, spoiled. Aim for somewhere truly exceptional. Price is secondary to experience.",
+    prefs: {
+      vibe:    { label: "Vibe",      opts: ["Exceptional & special", "Romantic & intimate", "Grand & celebratory", "Your favorite place"], def: ["Exceptional & special", "Romantic & intimate"] },
+      convo:   { label: "Priority",  opts: ["Unforgettable experience", "Perfect service", "Best bottle of wine", "Tasting menu journey"], def: ["Unforgettable experience", "Perfect service"] },
+      price:   { label: "Price",     opts: ["$", "$$", "$$$", "$$$$"], def: ["$$$$"] },
+      setting: { label: "Setting",   opts: ["Fine dining", "Chef's table", "Private room", "Iconic restaurant", "Rooftop"], def: ["Fine dining", "Chef's table"] },
+      avoid:   { label: "Avoid",     opts: ["Anything average", "Noisy or rushed", "No reservations", "Chain or generic"], def: ["Anything average", "Noisy or rushed"] }
+    }
+  },
+  casual: {
+    emoji: "😌", title: "Casual Date",
+    tagline: "Vibes over impressions",
+    headline: "Sometimes simple is the move.",
+    subline: "Not every date needs to be a production. Great tacos, a fun dive bar with food, a cool brunch spot — let the time together do the talking.",
+    prefs: {
+      vibe:    { label: "Vibe",      opts: ["Fun & unpretentious", "Neighborhood gem", "Brunch / daytime", "Outdoor seating", "Bar with food"], def: ["Fun & unpretentious", "Neighborhood gem"] },
+      convo:   { label: "Priority",  opts: ["Good food, no fuss", "Easy & relaxed", "Cool atmosphere", "Great drinks"], def: ["Good food, no fuss", "Easy & relaxed"] },
+      price:   { label: "Price",     opts: ["$", "$$", "$$$", "$$$$"], def: ["$", "$$"] },
+      setting: { label: "Setting",   opts: ["Restaurant", "Taco spot", "Brunch place", "Dive bar with food", "Beer garden"], def: ["Restaurant", "Brunch place"] },
+      avoid:   { label: "Avoid",     opts: ["Stuffy or formal", "Hard to get reservation", "Overly expensive", "Too quiet"], def: ["Stuffy or formal", "Hard to get reservation"] }
+    }
+  }
+};
+
+function DateWizard(props) {
+  var onConfirm = props.onConfirm; // called with { type, prefs, contextString }
   var onClose = props.onClose;
 
-  var dateTypes = [
-    { key: "first", emoji: "🌟", title: "First Date", desc: "Fun atmosphere, good for conversation, not too serious. Moderate price, easy to get to." },
-    { key: "second", emoji: "✨", title: "Second Date", desc: "Step it up — shows thought and effort. Maybe a cuisine they mentioned liking." },
-    { key: "third", emoji: "🌹", title: "Third Date", desc: "Impressive, memorable, slightly upscale. Make it special." },
-    { key: "anniversary", emoji: "💫", title: "Anniversary", desc: "Pull out all the stops. Exceptional food, romantic setting." },
-    { key: "casual", emoji: "😌", title: "Casual Date", desc: "Low-key, no pressure, great vibes. Let the food do the talking." }
-  ];
+  var _step = useState(0); var step = _step[0]; var setStep = _step[1];
+  var _type = useState(null); var selType = _type[0]; var setSelType = _type[1];
+  var _prefs = useState({}); var prefs = _prefs[0]; var setPrefs = _prefs[1];
 
+  function pickType(key) {
+    var profile = DATE_PROFILES[key];
+    // Initialize prefs with defaults
+    var init = {};
+    Object.keys(profile.prefs).forEach(function(k) {
+      init[k] = profile.prefs[k].def.slice();
+    });
+    setSelType(key);
+    setPrefs(init);
+    setStep(1);
+  }
+
+  function togglePref(category, opt) {
+    setPrefs(function(prev) {
+      var cur = prev[category] ? prev[category].slice() : [];
+      var idx = cur.indexOf(opt);
+      if (idx >= 0) { if (cur.length > 1) cur.splice(idx, 1); }
+      else { cur.push(opt); }
+      var next = Object.assign({}, prev);
+      next[category] = cur;
+      return next;
+    });
+  }
+
+  function buildContext() {
+    var p = DATE_PROFILES[selType];
+    var parts = [p.title + " date."];
+    Object.keys(p.prefs).forEach(function(k) {
+      var sel = prefs[k] || [];
+      if (sel.length > 0) parts.push(p.prefs[k].label + ": " + sel.join(", ") + ".");
+    });
+    return parts.join(" ");
+  }
+
+  function handleGo() {
+    onConfirm({ type: selType, prefs: prefs, contextString: buildContext() });
+  }
+
+  var typeList = Object.keys(DATE_PROFILES);
+
+  // Step 0: pick date type
+  if (step === 0) {
+    return E("div", { className: "modal-overlay",
+      onMouseDown: function(e) { if (e.target === e.currentTarget) onClose(); }
+    },
+      E("div", { className: "modal-sheet" },
+        E("div", { className: "modal-handle" }),
+        E("div", { className: "modal-title" }, "What kind of date? 🌹"),
+        typeList.map(function(key) {
+          var p = DATE_PROFILES[key];
+          return E("button", { key: key, className: "dw-type-card", onClick: function() { pickType(key); } },
+            E("div", { className: "dw-type-emoji" }, p.emoji),
+            E("div", null,
+              E("div", { className: "dw-type-name" }, p.title),
+              E("div", { className: "dw-type-tag" }, p.tagline)
+            ),
+            E("div", { style: { marginLeft: "auto", fontSize: 18, color: "var(--text3)", opacity: 0.5 } }, "›")
+          );
+        })
+      )
+    );
+  }
+
+  // Step 1: confirm / adjust prefs
+  var profile = DATE_PROFILES[selType];
   return E("div", { className: "modal-overlay",
-    onMouseDown: function(e) { if (e.target === e.currentTarget) onClose(); },
-    onTouchEnd: function(e) { if (e.target === e.currentTarget) onClose(); }
+    onMouseDown: function(e) { if (e.target === e.currentTarget) onClose(); }
   },
     E("div", { className: "modal-sheet" },
       E("div", { className: "modal-handle" }),
-      E("div", { className: "modal-title" }, "What kind of date? 🌹"),
-      dateTypes.map(function(dt) {
-        return E("div", { key: dt.key, className: "date-opt",
-          onClick: function() { onSelect(dt.key + " — " + dt.title + ": " + dt.desc); }
-        },
-          E("div", { className: "date-opt-title" }, dt.emoji + " " + dt.title),
-          E("div", { className: "date-opt-desc" }, dt.desc)
+      E("button", { className: "dw-back", onClick: function() { setStep(0); } },
+        "← Back to date types"
+      ),
+      E("div", { className: "dw-headline" }, profile.emoji + " " + profile.headline),
+      E("div", { className: "dw-subline" }, profile.subline),
+
+      Object.keys(profile.prefs).map(function(k) {
+        var section = profile.prefs[k];
+        var selected = prefs[k] || [];
+        return E("div", { key: k, className: "dw-section" },
+          E("div", { className: "dw-section-label" }, section.label),
+          E("div", { className: "dw-chips" },
+            section.opts.map(function(opt) {
+              var on = selected.indexOf(opt) >= 0;
+              return E("button", { key: opt, className: "dw-chip" + (on ? " on" : ""),
+                onClick: function() { togglePref(k, opt); }
+              }, (on ? "✓ " : "") + opt);
+            })
+          )
         );
-      })
+      }),
+
+      E("button", { className: "dw-go-btn", onClick: handleGo },
+        "Find my " + profile.title.toLowerCase() + " spot →"
+      )
     )
   );
 }
@@ -1064,7 +1239,9 @@ function FindTab(props) {
   var needsCKey = CLAUDE_KEY === "YOUR_CLAUDE_API_KEY";
 
 
-  function doSearch(lat, lng) {
+  function doSearch(lat, lng) { doSearchWithCtx(lat, lng, dateCtx); }
+
+  function doSearchWithCtx(lat, lng, ctx) {
     setStatus("Finding restaurants nearby...");
     nearbySearch(lat, lng, radius).then(function(data) {
       var places = data.places || [];
@@ -1079,9 +1256,9 @@ function FindTab(props) {
         return true;
       });
       setResults(filtered);
-      if ((query || dateCtx) && !needsCKey && filtered.length > 0) {
+      if ((query || ctx) && !needsCKey && filtered.length > 0) {
         setStatus("Getting AI recommendations...");
-        claudeFind(restaurants, filtered, query, dateCtx).then(function(cd) {
+        claudeFind(restaurants, filtered, query, ctx).then(function(cd) {
           setLoading(false); setStatus("");
           if (cd.content && cd.content[0]) {
             try {
@@ -1151,9 +1328,32 @@ function FindTab(props) {
   }
 
   return E("div", null,
-    showDate && E(DateModal, {
+    showDate && E(DateWizard, {
       onClose: function() { setShowDate(false); },
-      onSelect: function(ctx) { setDateCtx(ctx); setShowDate(false); }
+      onConfirm: function(result) {
+        setDateCtx(result.contextString);
+        setShowDate(false);
+        // Auto-trigger search after a tiny tick so state settles
+        setTimeout(function() {
+          setLoading(true); setErr(""); setResults([]); setAiPicks(null);
+          if (locMode === "text" && locText.trim()) {
+            setStatus("Finding that location...");
+            geocodeLocation(locText.trim()).then(function(coords) {
+              if (!coords) { setLoading(false); setStatus(""); setErr("Couldn't find that location. Try a city or neighborhood."); return; }
+              setLocCoords(coords);
+              doSearchWithCtx(coords.lat, coords.lng, result.contextString);
+            }).catch(function() { setLoading(false); setStatus(""); setErr("Location lookup failed."); });
+          } else {
+            setStatus("Getting your location...");
+            navigator.geolocation.getCurrentPosition(function(pos) {
+              doSearchWithCtx(pos.coords.latitude, pos.coords.longitude, result.contextString);
+            }, function() {
+              setLoading(false); setStatus("");
+              setErr("Location access denied. Please allow location or type a neighborhood.");
+            }, { timeout: 10000 });
+          }
+        }, 80);
+      }
     }),
     E("div", { className: "page-header" },
       E("button", { onClick: onBack, className: "back-logo" }, "← YumTum"),
@@ -1167,35 +1367,63 @@ function FindTab(props) {
         E("div", { style: { marginBottom: 4 } },
           E("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
             E("button", {
-              onClick: function() { setLocMode("gps"); setLocText(""); setLocCoords(null); },
+              onClick: function() {
+                setLocMode("gps"); setLocText(""); setLocCoords(null);
+                if (needsGKey) { setErr("Google Places API key needed."); return; }
+                setLoading(true); setErr(""); setResults([]); setAiPicks(null);
+                setStatus("Getting your location...");
+                navigator.geolocation.getCurrentPosition(function(pos) {
+                  doSearchWithCtx(pos.coords.latitude, pos.coords.longitude, dateCtx);
+                }, function() {
+                  setLoading(false); setStatus("");
+                  setErr("Location access denied — please allow location in your browser settings, or type a neighborhood below.");
+                }, { timeout: 12000 });
+              },
+              disabled: loading,
               style: {
-                flex: 1, padding: "11px 14px", borderRadius: 10, fontSize: 13, fontWeight: 500,
+                flex: 1, padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 500,
                 border: locMode === "gps" ? "1.5px solid var(--accent)" : "1px solid var(--border2)",
                 background: locMode === "gps" ? "var(--accent-dim)" : "var(--bg3)",
                 color: locMode === "gps" ? "var(--accent2)" : "var(--text2)",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 5
               }
-            }, "📍 My location"),
+            },
+              E("span", { style: { fontSize: 22 } }, "📍"),
+              E("span", null, "Near Me Now")
+            ),
             E("button", {
-              onClick: function() { setLocMode("text"); },
+              onClick: function() { setLocMode("text"); setResults([]); setAiPicks(null); },
               style: {
-                flex: 1, padding: "11px 14px", borderRadius: 10, fontSize: 13, fontWeight: 500,
+                flex: 1, padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 500,
                 border: locMode === "text" ? "1.5px solid var(--accent)" : "1px solid var(--border2)",
                 background: locMode === "text" ? "var(--accent-dim)" : "var(--bg3)",
                 color: locMode === "text" ? "var(--accent2)" : "var(--text2)",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 5
               }
-            }, "🗺 A neighborhood")
+            },
+              E("span", { style: { fontSize: 22 } }, "🗺"),
+              E("span", null, "A Neighborhood")
+            )
           ),
-          locMode === "text" && E("input", {
-            type: "text",
-            placeholder: "West Village NYC, SoHo, Silver Lake LA...",
-            value: locText,
-            onChange: function(e) { setLocText(e.target.value); setLocCoords(null); },
-            style: { fontSize: 15, marginBottom: 0 }
-          }),
-          locCoords && E("div", { style: { fontSize: 12, color: "var(--like)", marginTop: 6, paddingLeft: 2 } },
-            "📌 Searching near " + locCoords.name
+          locMode === "text" && E("div", null,
+            E("input", {
+              type: "text",
+              placeholder: "West Village NYC, SoHo, Silver Lake LA...",
+              value: locText,
+              onChange: function(e) { setLocText(e.target.value); setLocCoords(null); },
+              onKeyDown: function(e) { if (e.key === "Enter") handleFind(); },
+              style: { fontSize: 15, marginBottom: 10 }
+            }),
+            locCoords && E("div", { style: { fontSize: 12, color: "var(--like)", marginBottom: 8, paddingLeft: 2 } },
+              "📌 Searching near " + locCoords.name
+            ),
+            E("button", {
+              className: "find-go-btn", onClick: handleFind, disabled: loading || !locText.trim()
+            }, loading ? (status || "Searching...") : "Search this area →")
+          ),
+          locMode === "gps" && loading && E("div", { style: { textAlign: "center", padding: "16px 0 4px" } },
+            E("div", { className: "spinner", style: { margin: "0 auto 10px" } }),
+            E("div", { style: { fontSize: 13, color: "var(--text3)" } }, status)
           )
         ),
         E("button", {
@@ -1233,16 +1461,11 @@ function FindTab(props) {
           return E("button", { key: o.val, className: "chip" + (radius === o.val ? " active" : ""), onClick: function() { setRadius(o.val); } }, o.label);
         })
       ),
-      E("div", { style: { padding: "4px 20px 12px" } },
-        E("button", { className: "find-go-btn", onClick: handleFind, disabled: loading },
-          loading ? (status || "Finding...") : "📍 Find Restaurants Near Me"
-        )
-      ),
-      loading && E("div", { style: { textAlign: "center", padding: 30 } },
-        E("div", { className: "spinner", style: { margin: "0 auto 12px" } }),
+      err && E("div", { style: { margin: "8px 20px 4px", padding: "12px 14px", background: "rgba(201,71,42,0.1)", borderRadius: 10, fontSize: 13, color: "var(--accent2)", lineHeight: 1.5 } }, err),
+      locMode === "text" && loading && E("div", { style: { textAlign: "center", padding: "20px 0" } },
+        E("div", { className: "spinner", style: { margin: "0 auto 10px" } }),
         E("div", { style: { fontSize: 13, color: "var(--text3)" } }, status)
       ),
-      err && E("div", { style: { margin: "0 20px", padding: "12px 14px", background: "rgba(201,71,42,0.1)", borderRadius: 10, fontSize: 13, color: "var(--accent2)" } }, err),
 
       // AI picks at top
       aiTop.length > 0 && E("div", { style: { padding: "0 16px 8px" } },
@@ -1266,10 +1489,10 @@ function FindTab(props) {
         })
       ),
 
-      !loading && results.length === 0 && displayResults.length === 0 && !err && E("div", { className: "empty-state" },
+      !loading && results.length === 0 && !err && E("div", { className: "empty-state" },
         E("div", { className: "empty-icon" }, "📍"),
-        E("div", { className: "empty-title" }, "Find your next spot"),
-        E("div", { className: "empty-text" }, "Use filters and tap Find to discover restaurants near you")
+        E("div", { className: "empty-title" }, "Where to tonight?"),
+        E("div", { className: "empty-text" }, "Tap \u201cNear Me Now\u201d or type a neighborhood to find restaurants")
       )
     )
   );
