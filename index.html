@@ -656,18 +656,41 @@ function claudeFind(userHistory, nearby, query, dateContext) {
 
   var cityHint = nearby.length > 0 && nearby[0].formattedAddress ? nearby[0].formattedAddress : "";
 
-  var prompt = "You are the world's best restaurant matchmaker for 20-30 year olds. The restaurant pick is a cultural signal - it reveals his taste, awareness, and personality. Cool and discovered always beats safe and generic.\n\n"
-    + "CITY CONTEXT (infer city/neighborhood from these addresses): " + cityHint + "\n\n"
-    + "CANDIDATE RESTAURANTS FROM GOOGLE:\n" + nearbyStr + "\n\n"
-    + "OCCASION: " + (dateContext || "General dinner recommendation") + ". " + dateRules + "\n"
-    + (query ? "USER PREFERENCES: " + query + "\n" : "")
-    + "USER TASTE HISTORY: " + histStr + "\n\n"
-    + "YOUR RESEARCH PROCESS - follow these steps:\n"
-    + "STEP 1: Identify the city/neighborhood from the addresses above. Then determine which publications and critics define what is cool there right now. Examples: NYC = Eater NY, The Infatuation, Grub Street, NYMag Grub Street; LA = Eater LA, LA Times Restaurants, Infatuation LA; Chicago = Eater Chicago, Chicago Magazine, Trib dining; SF = Eater SF, SF Chronicle, Infatuation SF; London = Hot Dinners, Time Out London, Guardian Food; Paris = Le Fooding, Time Out Paris; smaller cities = find the best local alt-weekly or food blog.\n"
-    + "STEP 2: Use web search to research the 4-5 most promising candidates from the Google list against those local sources. For each: Is it still hot or has it peaked? Did the chef leave? Is it a local favorite or a tourist trap? Any recent Eater coverage, best-of lists, or red flags? What is the actual current vibe, crowd, and energy level?\n"
-    + "STEP 3: Apply the occasion rules ruthlessly. A place that is technically good but wrong for this occasion (too stuffy, wrong energy, chain vibes) gets cut.\n"
-    + "STEP 4: Return your 3 picks. Write reasons grounded in REAL current knowledge - name the actual vibe, a specific dish or feature, recent press, and exactly why it works for this occasion. No generic filler.\n\n"
-    + "Return ONLY a valid JSON array with no other text before or after it: [{\"index\":0,\"name\":\"exact name from list\",\"reason\":\"2 punchy sentences of real specific knowledge about this place and why it fits\"}]";
+  var locationHint = nearby.length > 0 && nearby[0].formattedAddress
+    ? nearby[0].formattedAddress
+    : (query || "this city");
+
+  var prompt = "You are a brutally opinionated NYC food insider recommending restaurants to a friend. You have strong taste. You know which places are genuinely worth going to and which are overhyped, peaked, or embarrassing to take a date to.\n\n"
+    + "LOCATION: " + locationHint + "\n"
+    + "OCCASION: " + (dateContext || "Dinner") + "\n"
+    + dateRules + "\n"
+    + (query ? "PREFERENCES: " + query + "\n" : "")
+    + "TASTE HISTORY: " + histStr + "\n\n"
+    + "GOOGLE NEARBY POOL (may or may not be good - use your judgment):\n" + nearbyStr + "\n\n"
+    + "YOUR JOB:\n"
+    + "STEP 1: Identify the neighborhood precisely. Then find the RIGHT editorial sources for this exact city - do not guess, look them up. The canonical sources by city:\n"
+    + "NYC: Eater NY (eater.com/new-york), The Infatuation NY (theinfatuation.com/new-york), Grub Street (grubstreet.com), NYT Dining, NYMag food. Neighborhood intel: West Village/SoHo/NoHo = Infatuation and Grub Street. Outer boroughs = Eater and local blogs.\n"
+    + "LOS ANGELES: Eater LA (la.eater.com), LA Times Food (latimes.com/food), Infatuation LA, LA Magazine dining, Jonathan Gold legacy coverage.\n"
+    + "CHICAGO: Eater Chicago (chicago.eater.com), Chicago Magazine dining, Chicago Tribune dining, Infatuation Chicago, Chicago Reader food.\n"
+    + "SAN FRANCISCO / BAY AREA: Eater SF (sf.eater.com), SF Chronicle dining (sfchronicle.com), Infatuation SF, SF Magazine, Tablehopper (tablehopper.com) - essential for SF.\n"
+    + "BOSTON: Eater Boston (boston.eater.com), Boston Magazine dining, Infatuation Boston, Boston Globe food, Improper Bostonian dining.\n"
+    + "WASHINGTON DC: Eater DC (dc.eater.com), Washingtonian dining (washingtonian.com), Washington Post food, Infatuation DC.\n"
+    + "MIAMI: Eater Miami (miami.eater.com), Miami New Times food, Miami Herald dining, Infatuation Miami.\n"
+    + "AUSTIN: Eater Austin (austin.eater.com), Austin Chronicle food, Austin American-Statesman dining, Texas Monthly food.\n"
+    + "SEATTLE: Eater Seattle (seattle.eater.com), Seattle Times food, Seattle Met dining, Infatuation Seattle.\n"
+    + "PORTLAND (OR): Eater Portland (portland.eater.com), Willamette Week food, Portland Mercury dining, Oregonian food.\n"
+    + "NASHVILLE: Eater Nashville (nashville.eater.com), Nashville Scene food, Nashville Lifestyles dining.\n"
+    + "NEW ORLEANS: Eater NOLA (nola.eater.com), Times-Picayune food, Where Y'at dining, Gambit food.\n"
+    + "PHILADELPHIA: Eater Philly (philadelphia.eater.com), Philadelphia Magazine dining, Philly.com food, Infatuation Philly.\n"
+    + "LONDON: Hot Dinners (hot-dinners.com) - the bible, Time Out London food, Guardian Food, Evening Standard dining, Eater London.\n"
+    + "PARIS: Le Fooding (lefooding.com) - essential, Time Out Paris food, Le Monde food, Figaroscope dining.\n"
+    + "TOKYO: Tabelog (tabelog.com) - the authority, Time Out Tokyo food, Japan Times dining, Eater coverage.\n"
+    + "ANYWHERE ELSE: Search for the city name + best restaurant critic, best food blog, Eater [city] if it exists, local alt-weekly food section. Do not rely on TripAdvisor or Yelp - find editorial sources with actual critics.\n"
+    + "STEP 2: Web search those specific sources for this neighborhood and occasion RIGHT NOW. Search like: site:theinfatuation.com soho first date OR eater.com west village date night 2025. Is each candidate still hot or has it peaked? Chef changes? Anything great opened recently?\n"
+    + "STEP 3: Apply the occasion rules like a scalpel. Be ruthless. A mediocre pick is worse than no pick.\n"
+    + "STEP 4: Pick your 3. Write each reason like a knowledgeable friend texting you - confident, specific, zero fluff. BANNED phrases: 'buzzy atmosphere', 'perfect for a date', 'great for sharing', 'cozy', 'intimate', 'vibrant'. No Yelp language. No quoting reviews. Say what ACTUALLY makes it good for THIS occasion on THIS date.\n"
+    + "EXAMPLE of bad reason: 'This buzzy spot has great sharing plates perfect for a first date.' EXAMPLE of good reason: 'Estela is the move - dark room, counter seating, burrata with salsa verde that gives you something to talk about. Food obsessives know it, but it never feels like you're trying too hard.'\n\n"
+    + "Return ONLY valid JSON, zero other text: [{\"name\":\"Exact Restaurant Name\",\"reason\":\"Your honest 2-sentence take, written like a text to a friend\"}]";
 
   return fetch(SUPABASE_URL + "/functions/v1/claude-proxy", {
     method: "POST",
@@ -1606,7 +1629,10 @@ function FindTab(props) {
 
     // Also filter by name for known tourist traps
     var BAD_NAME_FRAGMENTS = ["rh rooftop", "cheesecake factory", "olive garden",
-      "applebee", "chili's", "tgi friday", "red lobster", "outback"];
+      "applebee", "chili's", "tgi friday", "red lobster", "outback",
+      "legal sea foods", "legal seafoods", "barking crab", "james hook",
+      "union oyster", "bell in hand", "hard rock", "rainforest cafe",
+      "bubba gump", "joe's crab", "dick's last resort", "planet hollywood"];
 
     // If date context active, use Claude-directed search for smarter results
     if (ctx && !query) {
@@ -1787,12 +1813,31 @@ function FindTab(props) {
   ];
 
   // Build display results with AI picks at top
+  // Match by name (Claude may recommend places not in Google pool)
   var displayResults = results;
   var aiTop = [];
   if (aiPicks && aiPicks.length > 0) {
     aiPicks.forEach(function(pick) {
-      var r = results[pick.index];
-      if (r) aiTop.push({ place: r, reason: pick.reason });
+      // Try to find in Google results by name match
+      var nameLow = (pick.name || "").toLowerCase().trim();
+      var r = results.find(function(res) {
+        var rn = (res.displayName && res.displayName.text ? res.displayName.text : "").toLowerCase();
+        return rn === nameLow || rn.indexOf(nameLow) >= 0 || nameLow.indexOf(rn) >= 0;
+      });
+      if (r) {
+        aiTop.push({ place: r, reason: pick.reason });
+      } else {
+        // Claude found something better via web search - create a stub place card
+        aiTop.push({ place: {
+          displayName: { text: pick.name },
+          formattedAddress: "",
+          rating: null,
+          priceLevel: null,
+          types: ["restaurant"],
+          primaryTypeDisplayName: { text: "Restaurant" },
+          _webOnly: true
+        }, reason: pick.reason });
+      }
     });
   }
 
@@ -1954,7 +1999,13 @@ function FindCard(props) {
         [cu, pr.sym, p.rating ? ("★ " + p.rating + " Google") : null].filter(Boolean).join("  ·  ")
       ),
       p.formattedAddress && E("div", { style: { fontSize: 12, color: "var(--text3)", marginTop: 4 } }, p.formattedAddress),
-      reason && E("div", { className: "ai-reason" }, "\u201C" + reason + "\u201D")
+      reason && E("div", { className: "ai-reason" }, "\u201C" + reason + "\u201D"),
+      p._webOnly && E("a", {
+        href: "https://www.google.com/search?q=" + encodeURIComponent(p.displayName.text + " restaurant"),
+        target: "_blank",
+        rel: "noopener",
+        style: { display: "inline-block", marginTop: 8, fontSize: 12, color: "var(--accent2)", textDecoration: "underline" }
+      }, "Search on Google Maps")
     )
   );
 }
