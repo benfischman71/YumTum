@@ -577,7 +577,7 @@ function claudeDirectedSearch(lat, lng, radius, dateContext, query, userHistory)
     })
   }).then(function(r) { return r.json(); }).then(function(cd) {
     var text = (cd.content || []).map(function(b) { return b.text || ""; }).join("");
-    var match = text.match(/\[.*?\]/s);
+    var match = text.match(/\[[\s\S]*?\]/);
     if (!match) return null;
     var queries;
     try { queries = JSON.parse(match[0]); } catch(e) { return null; }
