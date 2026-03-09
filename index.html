@@ -340,7 +340,7 @@ var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 // Get from console.cloud.google.com - enable "Places API (New)"
 var GOOGLE_KEY = "AIzaSyDgMtKeioylHoM9emFMFqfBSDk8pVjE65E";
 // Get from console.anthropic.com - optional, powers AI Find features
-var CLAUDE_KEY = "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";
+var CLAUDE_KEY = "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";
 
 // ======================================================
 // SUPABASE SQL (run this ONCE in your SQL editor)
@@ -1639,6 +1639,7 @@ function FindTab(props) {
         E("button", { onClick: function() { setDateCtx(null); }, style: { fontSize: 16, color: "var(--love)", opacity: 0.6, padding: "0 4px" } }, "×")
       ),
       E("div", { className: "find-controls" },
+        E("div", { style: { display: "flex", gap: 8 } },
           E("button", {
             onClick: function() {
               setLocMode("gps"); setLocText(""); setLocCoords(null);
