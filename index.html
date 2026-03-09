@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Find a Spot</title>
+  <title>FindASpot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -651,7 +651,7 @@ function LoginFormInner(props) {
 function LoginScreen(props) {
   var _su = useState(false); var isSignup = _su[0]; var setSignup = _su[1];
   return E("div", { className: "login-bg" },
-    E("div", { className: "login-logo" }, "Find a Spot"),
+    E("div", { className: "login-logo" }, "FindASpot"),
     E("div", { className: "login-tagline" }, "Your personal restaurant guide"),
     E(LoginFormInner, {
       isSignup: isSignup,
@@ -926,7 +926,7 @@ function SpotsTab(props) {
   if (restaurants.length === 0) {
     return E("div", null,
       E("div", { className: "page-header" },
-        E("button", { onClick: onBack, className: "back-logo" }, "← YumTum"),
+        E("button", { onClick: onBack, className: "back-logo" }, "← FindASpot"),
         E("div", { className: "page-title" }, "My Spots")
       ),
       E("div", { className: "tab-content" },
@@ -941,7 +941,7 @@ function SpotsTab(props) {
 
   return E("div", null,
     E("div", { className: "page-header" },
-      E("button", { onClick: onBack, className: "back-logo" }, "← YumTum"),
+      E("button", { onClick: onBack, className: "back-logo" }, "← FindASpot"),
       E("div", { className: "page-title" },
         "My Spots",
         E("span", { className: "count-badge" }, restaurants.length)
@@ -1022,7 +1022,7 @@ function RateTab(props) {
   var onBack = props.onBack || function() {};
   return E("div", null,
     E("div", { className: "page-header" },
-      E("button", { onClick: onBack, className: "back-logo" }, "← YumTum"),
+      E("button", { onClick: onBack, className: "back-logo" }, "← FindASpot"),
       E("div", { className: "page-title" }, "Rate a Restaurant"),
       E("div", { className: "page-sub" }, "Save your experiences")
     ),
@@ -1410,17 +1410,17 @@ function FindTab(props) {
   function doSearch(lat, lng) { doSearchWithCtx(lat, lng, dateCtx); }
 
   function doSearchWithCtx(lat, lng, ctx) {
-    console.log("[YumTum] doSearchWithCtx called", lat, lng, "radius:", radius);
+    console.log("[FindASpot] doSearchWithCtx called", lat, lng, "radius:", radius);
     setStatus("Finding restaurants nearby...");
     nearbySearch(lat, lng, radius).then(function(data) {
-      console.log("[YumTum] nearbySearch raw response:", JSON.stringify(data).slice(0, 400));
+      console.log("[FindASpot] nearbySearch raw response:", JSON.stringify(data).slice(0, 400));
       if (data.error) {
         setLoading(false); setStatus("");
         setErr("Google API error: " + (data.error.message || JSON.stringify(data.error)) + " - Check that your Google API key has Places API (New) enabled in the Google Cloud Console.");
         return;
       }
       var places = data.places || [];
-      console.log("[YumTum] places returned:", places.length);
+      console.log("[FindASpot] places returned:", places.length);
       if (places.length === 0) {
         setLoading(false); setStatus("");
         setErr("No restaurants found nearby. Try a larger radius or different location.");
@@ -1436,7 +1436,7 @@ function FindTab(props) {
         if (price !== "any") { var pr = priceLvl(p.priceLevel); if (pr.sym !== price) return false; }
         return true;
       });
-      console.log("[YumTum] filtered places:", filtered.length);
+      console.log("[FindASpot] filtered places:", filtered.length);
       setResults(filtered);
       if (filtered.length === 0) {
         setLoading(false); setStatus("");
@@ -1446,10 +1446,10 @@ function FindTab(props) {
       if ((query || ctx) && !needsCKey) {
         setStatus("Getting AI recommendations...");
         claudeFind(restaurants, filtered, query, ctx).then(function(cd) {
-          console.log("[YumTum] Claude response:", JSON.stringify(cd).slice(0, 300));
+          console.log("[FindASpot] Claude response:", JSON.stringify(cd).slice(0, 300));
           setLoading(false); setStatus("");
           if (cd.error) {
-            console.warn("[YumTum] Claude error:", cd.error);
+            console.warn("[FindASpot] Claude error:", cd.error);
             return; // still show results, just no AI picks
           }
           if (cd.content && cd.content[0]) {
@@ -1457,19 +1457,19 @@ function FindTab(props) {
               var txt = cd.content[0].text;
               var start = txt.indexOf("["); var end = txt.lastIndexOf("]") + 1;
               var picks = JSON.parse((start >= 0 && end > start) ? txt.slice(start, end) : txt.trim());
-              console.log("[YumTum] AI picks:", picks);
+              console.log("[FindASpot] AI picks:", picks);
               setAiPicks(picks);
-            } catch(e) { console.warn("[YumTum] JSON parse error:", e); setAiPicks(null); }
+            } catch(e) { console.warn("[FindASpot] JSON parse error:", e); setAiPicks(null); }
           }
         }).catch(function(e) {
-          console.warn("[YumTum] Claude fetch error:", e);
+          console.warn("[FindASpot] Claude fetch error:", e);
           setLoading(false); setStatus("");
         });
       } else {
         setLoading(false); setStatus("");
       }
     }).catch(function(e) {
-      console.error("[YumTum] nearbySearch fetch error:", e);
+      console.error("[FindASpot] nearbySearch fetch error:", e);
       setLoading(false); setStatus("");
       setErr("Network error reaching Google. Check your internet connection and that the Google API key has Places API (New) enabled at console.cloud.google.com.");
     });
@@ -1555,8 +1555,8 @@ function FindTab(props) {
       }
     }),
     E("div", { className: "page-header" },
-      E("button", { onClick: onBack, className: "back-logo" }, "← YumTum"),
-      E("div", { className: "page-title" }, "Find a Spot")
+      E("button", { onClick: onBack, className: "back-logo" }, "← FindASpot"),
+      E("div", { className: "page-title" }, "FindASpot")
     ),
     E("div", { className: "tab-content" },
       (needsGKey || needsCKey) && E("div", { className: "setup-warn" },
@@ -1890,8 +1890,8 @@ function MainApp(props) {
               firstName ? "Hey, " + firstName : "Welcome back"
             ),
             E("div", { className: "home-logo", style: { textShadow: textShadow } },
-              E("span", { style: { color: textColor } }, "Yum"),
-              E("span", { style: { color: logoAccent } }, "Tum")
+              E("span", { style: { color: textColor } }, "Find"),
+              E("span", { style: { color: logoAccent } }, "ASpot")
             ),
             E("div", { className: "home-sub", style: { color: textColor, opacity: 0.55, textShadow: textShadow } },
               restaurants.length > 0 ? restaurants.length + " spots saved  \xb7  " + loveCount + " loved" : "Your personal restaurant guide"
@@ -1938,7 +1938,7 @@ function MainApp(props) {
           E("div", { className: "home-card-inner" },
             E("div", { className: "home-card-emoji" }, "📍"),
             E("div", null,
-              E("div", { className: "home-card-name", style: { color: logoAccent, textShadow: textShadow } }, "Find a Spot"),
+              E("div", { className: "home-card-name", style: { color: logoAccent, textShadow: textShadow } }, "FindASpot"),
               E("div", { className: "home-card-desc", style: { color: textColor, opacity: 0.6 } }, "AI recommendations near you")
             )
           ),
@@ -1972,14 +1972,14 @@ function App() {
 
   useEffect(function() {
     try {
-      var saved = localStorage.getItem("yumtum_session");
+      var saved = localStorage.getItem("findaspot_session");
       if (saved) {
         var sess = JSON.parse(saved);
         if (sess && sess.token && sess.user && sess.expires && Date.now() < sess.expires) {
           setToken(sess.token);
           setUser(sess.user);
         } else {
-          localStorage.removeItem("yumtum_session");
+          localStorage.removeItem("findaspot_session");
         }
       }
     } catch(e) {}
@@ -1989,7 +1989,7 @@ function App() {
     setToken(t); setUser(u);
     if (remember) {
       try {
-        localStorage.setItem("yumtum_session", JSON.stringify({
+        localStorage.setItem("findaspot_session", JSON.stringify({
           token: t, user: u,
           expires: Date.now() + 30 * 24 * 60 * 60 * 1000
         }));
@@ -1998,7 +1998,7 @@ function App() {
   }
   function handleLogout() {
     setToken(null); setUser(null);
-    try { localStorage.removeItem("yumtum_session"); } catch(e) {}
+    try { localStorage.removeItem("findaspot_session"); } catch(e) {}
   }
 
   if (!token) {
