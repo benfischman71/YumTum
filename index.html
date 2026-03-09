@@ -643,54 +643,97 @@ function claudeFind(userHistory, nearby, query, dateContext) {
     return i + ". " + p.displayName.text + " | " + ct + " | " + pr.sym + " | Google " + (p.rating || "?") + "/5 | " + (p.formattedAddress || "");
   }).join("\n");
 
-  var firstDateRules = "FIRST DATE - 2026 REALITY: Women are done with app fatigue and want genuine real-world impressions. The restaurant pick is HIS cultural signal - shows taste and self-awareness. ~70dB optimal noise, sharing plates build intimacy. Gen Z women 36% more hesitant on date 1 (Hinge 2025). BEST: natural wine bars, izakayas, cool tapas, hip gastropubs, interesting ethnic spots with drinks program - feels discovered. KILLS IT: Chains (Olive Garden, Cheesecake Factory, Applebee's - TikTok worst list), Gramercy Tavern business-dinner energy, fine dining (trapped/anxious), fast casual (no effort), bakeries/cafes. Price sweet spot $$. Reservation required. PACE IS CRITICAL: The spot must have a natural exit ramp - if it is bad you leave in 45 min, if great you stay 3 hours. Small plates bars are ideal: no entree commitment, no waiting for courses, no trapped feeling. AVOID anywhere with long tasting menus, prix fixe, or where leaving early feels rude. The date controls the clock, not the restaurant.";
-  var secondDateRules = "SECOND DATE - 2026 REALITY: She said yes again - meaningful. Show you were PAYING ATTENTION. Reference date 1: a cuisine she mentioned, neighborhood to explore, food she wanted to try. Reservation non-negotiable (signals planning). Deep dating is the dominant 2026 trend (Hinge D.A.T.E.). Better lighting, better wine list, somewhere with a story. Chef-driven spots, rooftops, places a food obsessive would know. One notch above date 1 in intentionality, still cool and approachable, never stuffy.";
-  var thirdDateRules = "THIRD DATE - 2026 REALITY: Match/Kinsey Institute (2025, 5,000 singles) - 90% know if chemistry is real by date 3. This date defines the trajectory. She has already told her friends about him and the restaurant will come up. Real wow factor: acclaimed chef, beautiful room, incredible food, a story worth telling. Book in advance, request a good table, consider a drink nearby first. Still cool, not stuffy fine dining.";
-  var anniversaryRules = "ANNIVERSARY - Go all out. Truly exceptional only. Fine dining, chef tables, tasting menus. Price secondary to experience. Call ahead, mention the occasion, order the wine pairing.";
-  var dateRules = dateContext
-    ? (dateContext.indexOf("First Date") >= 0 ? firstDateRules
-      : dateContext.indexOf("Second Date") >= 0 ? secondDateRules
-      : dateContext.indexOf("Third Date") >= 0 ? thirdDateRules
-      : dateContext.indexOf("Anniversary") >= 0 ? anniversaryRules : "")
-    : "";
-
-  var cityHint = nearby.length > 0 && nearby[0].formattedAddress ? nearby[0].formattedAddress : "";
-
   var locationHint = nearby.length > 0 && nearby[0].formattedAddress
     ? nearby[0].formattedAddress
     : (query || "this city");
 
-  var prompt = "You are a brutally opinionated NYC food insider recommending restaurants to a friend. You have strong taste. You know which places are genuinely worth going to and which are overhyped, peaked, or embarrassing to take a date to.\n\n"
+  // === OCCASION RULES ===
+  var firstDateRules = "FIRST DATE RULES: The pick is a cultural signal - shows taste and self-awareness. Natural wine bars, izakayas, cool tapas, hip gastropubs = great. Chains, fine dining (trapped feeling), tasting menus (no exit ramp), bakeries/cafes = disqualifying. Price sweet spot $$. EXIT RAMP IS NON-NEGOTIABLE: the format must allow leaving after 45 min if bad, staying 3 hours if great. Small plates bars are ideal. No prix fixe, no tasting menus.";
+  var secondDateRules = "SECOND DATE RULES: She said yes again - show you were paying attention. Reservation non-negotiable. One notch more intentional than date 1 - better lighting, better wine list, somewhere with a story. Chef-driven, interesting, approachable. Never stuffy.";
+  var thirdDateRules = "THIRD DATE RULES: 90% of people know if chemistry is real by date 3. This date defines the trajectory. She will tell her friends where he took her. Real wow factor required: acclaimed chef, beautiful room, incredible food. Book ahead, request a good table.";
+  var anniversaryRules = "ANNIVERSARY RULES: Go all out. Truly exceptional only. Fine dining, chef tables, tasting menus. Price is secondary. Call ahead, mention the occasion.";
+  var casualRules = "CASUAL RULES: Low pressure, fun, approachable. Great food that does not require effort to enjoy. Neighborhood spots, fun cuisines, places where you can talk easily.";
+
+  var dateRules = dateContext
+    ? (dateContext.indexOf("First Date") >= 0 ? firstDateRules
+      : dateContext.indexOf("Second Date") >= 0 ? secondDateRules
+      : dateContext.indexOf("Third Date") >= 0 ? thirdDateRules
+      : dateContext.indexOf("Anniversary") >= 0 ? anniversaryRules
+      : dateContext.indexOf("Casual") >= 0 ? casualRules : "")
+    : "";
+
+  // === CATEGORIES BY OCCASION ===
+  var categories;
+  if (dateContext && dateContext.indexOf("First Date") >= 0) {
+    categories = [
+      { id: "insider", emoji: "🔥", label: "The Insider Pick", brief: "The place a Grub Street editor or serious food person would actually go to. Feels discovered - not obvious, not a default. The pick that signals real taste without trying too hard. Should be currently relevant and talked about in the food press." },
+      { id: "lowkey", emoji: "🍷", label: "Low-Key Lethal", brief: "Looks casual or unassuming. The food and vibe absolutely overdeliver. No pressure, easy to leave after 45 minutes if the date is bad, easy to stay 3 hours if it is great. Small plates format ideal. The kind of place regulars are protective of." },
+      { id: "wildcard", emoji: "🌶", label: "The Wildcard", brief: "Unusual cuisine, exciting recent opening, or chef-driven concept that creates a genuine talking point. Higher ceiling because it gives you both something to react to together. Should be bold without being uncomfortable." }
+    ];
+  } else if (dateContext && dateContext.indexOf("Second Date") >= 0) {
+    categories = [
+      { id: "levelup", emoji: "✨", label: "Level Up", brief: "Notch above date 1 in intentionality. Better wine list, better room, more considered. Still approachable and cool - never stuffy. The kind of place that says you did research and have real taste." },
+      { id: "chef", emoji: "🎯", label: "The Chef Play", brief: "Serious kitchen. A chef with a point of view. Food obsessives know this place. James Beard attention, Michelin nod, or the type of restaurant that gets written about in the right places. Shows you went beyond obvious choices." },
+      { id: "territory", emoji: "🗺", label: "New Territory", brief: "A neighborhood or cuisine to explore together - somewhere neither of you has a history with. Shared discovery builds connection faster than a familiar spot. Could be a great ethnic restaurant, a new neighborhood, or a format neither has tried." }
+    ];
+  } else if (dateContext && dateContext.indexOf("Third Date") >= 0) {
+    categories = [
+      { id: "wow", emoji: "👑", label: "The Wow Factor", brief: "She is going to text her friends where you took her. Beautiful room, seriously acclaimed, a place that creates a memory. Must have both incredible food AND an atmosphere worth talking about." },
+      { id: "prestige", emoji: "🍽", label: "The Prestige Move", brief: "Michelin starred, James Beard winning, or the most critically acclaimed restaurant in the area. The full credibility play. This is the restaurant that defines the city to serious food people." },
+      { id: "cult", emoji: "💡", label: "The Cult Spot", brief: "Hard to get, obsessively talked about by locals, the kind of place where regulars feel ownership. Might not be famous outside the city but within it everyone who knows food knows this place." }
+    ];
+  } else if (dateContext && dateContext.indexOf("Anniversary") >= 0) {
+    categories = [
+      { id: "fullsend", emoji: "💎", label: "The Full Send", brief: "Tasting menu, wine pairing, chef interaction if possible. Pull out all stops. Price is not a consideration. This is the one you tell people about years later." },
+      { id: "room", emoji: "🕯", label: "The Room", brief: "The most beautiful dining room in the city. The memory is the space - architecture, candlelight, a room that makes the night feel significant. Food must also be exceptional." },
+      { id: "callback", emoji: "🔄", label: "The Meaningful One", brief: "A restaurant with personal or emotional resonance - near a meaningful place, a cuisine you both love, or the type of experience that references your relationship. Personal beats impressive." }
+    ];
+  } else {
+    categories = [
+      { id: "best", emoji: "🔥", label: "The Best in the Area", brief: "The single most critically acclaimed and locally loved restaurant in this neighborhood right now. What the food press is writing about." },
+      { id: "neighborhood", emoji: "🏡", label: "The Neighborhood Gem", brief: "A beloved local institution or neighborhood classic that regulars are protective of. Not flashy, genuinely excellent, the place locals send their visiting friends." },
+      { id: "fun", emoji: "🎉", label: "The Fun Pick", brief: "High energy, great for groups, great drinks program, somewhere that creates a good time rather than a considered experience. The place you go when you want to have fun, not impress." }
+    ];
+  }
+
+  var catBriefs = categories.map(function(c) {
+    return "CATEGORY - " + c.label + ": " + c.brief;
+  }).join("\n\n");
+
+  var prompt = "You are a brutally opinionated food insider. You know exactly which restaurants are genuinely worth going to and which are overhyped, peaked, or embarrassing.\n\n"
     + "LOCATION: " + locationHint + "\n"
     + "OCCASION: " + (dateContext || "Dinner") + "\n"
     + dateRules + "\n"
-    + (query ? "PREFERENCES: " + query + "\n" : "")
-    + "TASTE HISTORY: " + histStr + "\n\n"
-    + "GOOGLE NEARBY POOL (may or may not be good - use your judgment):\n" + nearbyStr + "\n\n"
-    + "YOUR JOB:\n"
-    + "STEP 1: Identify the neighborhood precisely. Then find the RIGHT editorial sources for this exact city - do not guess, look them up. The canonical sources by city:\n"
-    + "NYC: Eater NY (eater.com/new-york), The Infatuation NY (theinfatuation.com/new-york), Grub Street (grubstreet.com), NYT Dining, NYMag food. Neighborhood intel: West Village/SoHo/NoHo = Infatuation and Grub Street. Outer boroughs = Eater and local blogs.\n"
-    + "LOS ANGELES: Eater LA (la.eater.com), LA Times Food (latimes.com/food), Infatuation LA, LA Magazine dining, Jonathan Gold legacy coverage.\n"
-    + "CHICAGO: Eater Chicago (chicago.eater.com), Chicago Magazine dining, Chicago Tribune dining, Infatuation Chicago, Chicago Reader food.\n"
-    + "SAN FRANCISCO / BAY AREA: Eater SF (sf.eater.com), SF Chronicle dining (sfchronicle.com), Infatuation SF, SF Magazine, Tablehopper (tablehopper.com) - essential for SF.\n"
-    + "BOSTON: Eater Boston (boston.eater.com), Boston Magazine dining, Infatuation Boston, Boston Globe food, Improper Bostonian dining.\n"
-    + "WASHINGTON DC: Eater DC (dc.eater.com), Washingtonian dining (washingtonian.com), Washington Post food, Infatuation DC.\n"
-    + "MIAMI: Eater Miami (miami.eater.com), Miami New Times food, Miami Herald dining, Infatuation Miami.\n"
-    + "AUSTIN: Eater Austin (austin.eater.com), Austin Chronicle food, Austin American-Statesman dining, Texas Monthly food.\n"
-    + "SEATTLE: Eater Seattle (seattle.eater.com), Seattle Times food, Seattle Met dining, Infatuation Seattle.\n"
-    + "PORTLAND (OR): Eater Portland (portland.eater.com), Willamette Week food, Portland Mercury dining, Oregonian food.\n"
-    + "NASHVILLE: Eater Nashville (nashville.eater.com), Nashville Scene food, Nashville Lifestyles dining.\n"
-    + "NEW ORLEANS: Eater NOLA (nola.eater.com), Times-Picayune food, Where Y'at dining, Gambit food.\n"
-    + "PHILADELPHIA: Eater Philly (philadelphia.eater.com), Philadelphia Magazine dining, Philly.com food, Infatuation Philly.\n"
-    + "LONDON: Hot Dinners (hot-dinners.com) - the bible, Time Out London food, Guardian Food, Evening Standard dining, Eater London.\n"
-    + "PARIS: Le Fooding (lefooding.com) - essential, Time Out Paris food, Le Monde food, Figaroscope dining.\n"
-    + "TOKYO: Tabelog (tabelog.com) - the authority, Time Out Tokyo food, Japan Times dining, Eater coverage.\n"
-    + "ANYWHERE ELSE: Search for the city name + best restaurant critic, best food blog, Eater [city] if it exists, local alt-weekly food section. Do not rely on TripAdvisor or Yelp - find editorial sources with actual critics.\n"
-    + "STEP 2: Web search those specific sources for this neighborhood and occasion RIGHT NOW. Search like: site:theinfatuation.com soho first date OR eater.com west village date night 2025. Is each candidate still hot or has it peaked? Chef changes? Anything great opened recently?\n"
-    + "STEP 3: Apply the occasion rules like a scalpel. Be ruthless. A mediocre pick is worse than no pick.\n"
-    + "STEP 4: Pick your 3. Write each reason like a knowledgeable friend texting you - confident, specific, zero fluff. BANNED phrases: 'buzzy atmosphere', 'perfect for a date', 'great for sharing', 'cozy', 'intimate', 'vibrant'. No Yelp language. No quoting reviews. Say what ACTUALLY makes it good for THIS occasion on THIS date.\n"
-    + "EXAMPLE of bad reason: 'This buzzy spot has great sharing plates perfect for a first date.' EXAMPLE of good reason: 'Estela is the move - dark room, counter seating, burrata with salsa verde that gives you something to talk about. Food obsessives know it, but it never feels like you're trying too hard.'\n\n"
-    + "Return ONLY valid JSON, zero other text: [{\"name\":\"Exact Restaurant Name\",\"reason\":\"Your honest 2-sentence take, written like a text to a friend\"}]";
+    + (query ? "USER PREFERENCES: " + query + "\n" : "")
+    + "USER TASTE HISTORY: " + histStr + "\n\n"
+    + "GOOGLE NEARBY POOL (starting reference - not a constraint, you can recommend beyond this list):\n" + nearbyStr + "\n\n"
+    + "YOUR MISSION: Return 3 categories of picks. Each category has a specific brief you must nail.\n\n"
+    + catBriefs + "\n\n"
+    + "RESEARCH PROCESS:\n"
+    + "STEP 1: Identify the exact neighborhood. Find the authoritative editorial sources:\n"
+    + "NYC: Eater NY, The Infatuation NY, Grub Street, NYT Dining. SoHo/NoHo/West Village = Infatuation + Grub Street primarily.\n"
+    + "BOSTON: Eater Boston, Boston Magazine, Infatuation Boston, Improper Bostonian.\n"
+    + "LA: Eater LA, LA Times Food, Infatuation LA.\n"
+    + "CHICAGO: Eater Chicago, Chicago Magazine, Infatuation Chicago.\n"
+    + "SF: Eater SF, SF Chronicle, Tablehopper (tablehopper.com) - essential.\n"
+    + "DC: Eater DC, Washingtonian, Washington Post food.\n"
+    + "MIAMI: Eater Miami, Miami New Times, Infatuation Miami.\n"
+    + "AUSTIN: Eater Austin, Texas Monthly food, Austin Chronicle.\n"
+    + "SEATTLE: Eater Seattle, Seattle Times, Seattle Met.\n"
+    + "NASHVILLE: Eater Nashville, Nashville Scene.\n"
+    + "NOLA: Eater NOLA, Times-Picayune, Gambit food.\n"
+    + "PHILLY: Eater Philly, Philadelphia Magazine.\n"
+    + "LONDON: Hot Dinners (hot-dinners.com) is the bible. Also Time Out London, Guardian Food.\n"
+    + "PARIS: Le Fooding (lefooding.com) first. Also Figaroscope.\n"
+    + "TOKYO: Tabelog (tabelog.com) is the authority.\n"
+    + "ANYWHERE ELSE: Find local alt-weekly food critic, local Eater if it exists. Never use TripAdvisor or Yelp.\n\n"
+    + "STEP 2: Web search those editorial sources for this specific neighborhood and occasion. DO NOT search individual restaurant names or addresses from the Google pool — that wastes searches and misses better options. Instead search things like: site:theinfatuation.com west+village first+date OR eater.com best+restaurants+soho+nyc+2025. Find what the critics are actually recommending RIGHT NOW.\n"
+    + "STEP 3: For each category, find the single best pick that nails that specific brief. Can be from the Google pool OR from your web research - whichever is actually best.\n"
+    + "STEP 4: Write each reason like a knowledgeable friend texting - confident, specific, honest. BANNED: buzzy, intimate, cozy, vibrant, perfect for a date, great for sharing. No review quotes. No Yelp language. Say what makes it right for THIS category and THIS occasion.\n\n"
+    + "GOOD REASON EXAMPLE: Estela is the move - dark room, counter seating, burrata with salsa verde that gives you something to react to. Food obsessives know it, never feels like you tried too hard.\n"
+    + "BAD REASON EXAMPLE: This buzzy spot is perfect for a date with great sharing plates and an intimate atmosphere.\n\n"
+    + "Return ONLY valid JSON, zero other text. Exactly 3 category objects, each with exactly 3 picks:\n"
+    + "[{"category":"The Insider Pick","emoji":"emoji","picks":[{"name":"Restaurant Name","reason":"2 sentences, text-to-a-friend tone"},{"name":"Restaurant Name","reason":"..."},{"name":"Restaurant Name","reason":"..."}]},{"category":"Low-Key Lethal","emoji":"emoji","picks":[...]},{"category":"The Wildcard","emoji":"emoji","picks":[...]}]";
 
   return fetch(SUPABASE_URL + "/functions/v1/claude-proxy", {
     method: "POST",
@@ -700,8 +743,8 @@ function claudeFind(userHistory, nearby, query, dateContext) {
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 2000,
-      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 8 }],
+      max_tokens: 4000,
+      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 12 }],
       messages: [{ role: "user", content: prompt }]
     })
   }).then(function(r) { return r.json(); });
@@ -1745,17 +1788,34 @@ function FindTab(props) {
                 .filter(function(b) { return b.type === "text" && b.text; })
                 .map(function(b) { return b.text; })
                 .join("");
+              // Strip citation tags
+              allText = allText.replace(/<cite[^>]*>/g, "").replace(/<\/cite>/g, "");
               var start = allText.lastIndexOf("["); var end = allText.lastIndexOf("]") + 1;
-              var picks = JSON.parse((start >= 0 && end > start) ? allText.slice(start, end) : allText.trim());
-              // Strip any citation markup Claude may have added
-              picks = picks.map(function(p) {
-                if (p.reason) {
-                  p.reason = p.reason.replace(/<cite[^>]*>/g, "").replace(/<\/cite>/g, "").replace(/\s+/g, " ").trim();
-                }
-                return p;
-              });
-              console.log("[FindASpot] AI picks:", picks);
-              setAiPicks(picks);
+              var parsed = JSON.parse((start >= 0 && end > start) ? allText.slice(start, end) : allText.trim());
+              // Support both old flat array and new category array
+              var categories = [];
+              if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].picks) {
+                // New format: [{category, emoji, picks:[{name, reason}]}]
+                categories = parsed.map(function(cat) {
+                  return {
+                    category: cat.category || "Picks",
+                    emoji: cat.emoji || "✦",
+                    picks: (cat.picks || []).map(function(p) {
+                      return {
+                        name: p.name,
+                        reason: (p.reason || "").replace(/\s+/g, " ").trim()
+                      };
+                    })
+                  };
+                });
+              } else if (Array.isArray(parsed)) {
+                // Old flat format - wrap in single category
+                categories = [{ category: "Claude Picks", emoji: "✦", picks: parsed.map(function(p) {
+                  return { name: p.name, reason: (p.reason || "").replace(/\s+/g, " ").trim() };
+                })}];
+              }
+              console.log("[FindASpot] AI categories:", categories);
+              setAiPicks(categories);
             } catch(e) { console.warn("[FindASpot] JSON parse error:", e); setAiPicks(null); }
           }
         }).catch(function(e) {
@@ -1770,7 +1830,7 @@ function FindTab(props) {
 
   function handleFind() {
     if (needsGKey) { setErr("Google Places API key needed for Find a Spot."); return; }
-    setLoading(true); setErr(""); setResults([]); setAiPicks(null);
+    setLoading(true); setErr(""); setResults([]);
     if (locMode === "text" && locText.trim()) {
       setStatus("Finding that location...");
       geocodeLocation(locText.trim()).then(function(coords) {
@@ -1812,33 +1872,24 @@ function FindTab(props) {
     { val: 8000, label: "5 mi" }
   ];
 
-  // Build display results with AI picks at top
-  // Match by name (Claude may recommend places not in Google pool)
+  // Build display results - aiPicks is now [{category, emoji, picks:[{name,reason}]}]
   var displayResults = results;
-  var aiTop = [];
-  if (aiPicks && aiPicks.length > 0) {
-    aiPicks.forEach(function(pick) {
-      // Try to find in Google results by name match
-      var nameLow = (pick.name || "").toLowerCase().trim();
-      var r = results.find(function(res) {
-        var rn = (res.displayName && res.displayName.text ? res.displayName.text : "").toLowerCase();
-        return rn === nameLow || rn.indexOf(nameLow) >= 0 || nameLow.indexOf(rn) >= 0;
-      });
-      if (r) {
-        aiTop.push({ place: r, reason: pick.reason });
-      } else {
-        // Claude found something better via web search - create a stub place card
-        aiTop.push({ place: {
-          displayName: { text: pick.name },
-          formattedAddress: "",
-          rating: null,
-          priceLevel: null,
-          types: ["restaurant"],
-          primaryTypeDisplayName: { text: "Restaurant" },
-          _webOnly: true
-        }, reason: pick.reason });
-      }
+  function resolvePickPlace(pickName) {
+    var nameLow = (pickName || "").toLowerCase().trim();
+    var r = results.find(function(res) {
+      var rn = (res.displayName && res.displayName.text ? res.displayName.text : "").toLowerCase();
+      return rn === nameLow || rn.indexOf(nameLow) >= 0 || nameLow.indexOf(rn) >= 0;
     });
+    if (r) return r;
+    // Web-only stub
+    return {
+      displayName: { text: pickName },
+      formattedAddress: "",
+      rating: null, priceLevel: null,
+      types: ["restaurant"],
+      primaryTypeDisplayName: { text: "Restaurant" },
+      _webOnly: true
+    };
   }
 
   return E("div", null,
@@ -1857,7 +1908,7 @@ function FindTab(props) {
             onClick: function() {
               setLocMode("gps"); setLocText(""); setLocCoords(null);
               if (needsGKey) { setErr("Google Places API key needed."); return; }
-              setLoading(true); setErr(""); setResults([]); setAiPicks(null);
+              setLoading(true); setErr(""); setResults([]);
               setStatus("Getting your location...");
               navigator.geolocation.getCurrentPosition(function(pos) {
                 doSearchWithCtx(pos.coords.latitude, pos.coords.longitude, dateCtx);
@@ -1954,20 +2005,36 @@ function FindTab(props) {
         })
       ),
 
-      // AI picks at top
-      aiTop.length > 0 && E("div", { style: { padding: "0 16px 8px" } },
-        E("div", { style: { display: "flex", alignItems: "center", gap: 10, margin: "8px 0 12px" } },
+      // AI category picks
+      aiPicks && aiPicks.length > 0 && E("div", { style: { padding: "0 16px 8px" } },
+        E("div", { style: { display: "flex", alignItems: "center", gap: 10, margin: "8px 0 16px" } },
           E("div", { className: "ai-pill" }, "✦ Claude Picks"),
-          E("div", { style: { fontSize: 12, color: "var(--text3)" } }, "Based on your taste")
+          E("div", { style: { fontSize: 12, color: "var(--text3)" } }, "Editorial picks by category")
         ),
-        aiTop.map(function(item) {
-          return E(FindCard, { key: item.place.id, place: item.place, reason: item.reason });
+        aiPicks.map(function(cat, ci) {
+          return E("div", { key: ci, style: { marginBottom: 28 } },
+            E("div", { style: {
+              display: "flex", alignItems: "center", gap: 8,
+              marginBottom: 12, paddingBottom: 8,
+              borderBottom: "1px solid var(--border)"
+            } },
+              E("span", { style: { fontSize: 20 } }, cat.emoji),
+              E("div", null,
+                E("div", { style: { fontSize: 15, fontWeight: 700, color: "var(--text1)" } }, cat.category),
+                E("div", { style: { fontSize: 11, color: "var(--text3)", marginTop: 1 } }, "3 options")
+              )
+            ),
+            cat.picks && cat.picks.map(function(pick, pi) {
+              var place = resolvePickPlace(pick.name);
+              return E(FindCard, { key: pi, place: place, reason: pick.reason });
+            })
+          );
         })
       ),
 
       // Rest of results
       !loading && results.length > 0 && E("div", { style: { padding: "0 16px 8px" } },
-        aiTop.length > 0 && E("div", { style: { marginTop: 16, marginBottom: 12 } },
+        aiPicks && aiPicks.length > 0 && E("div", { style: { marginTop: 16, marginBottom: 12 } },
           E("div", { style: { height: 1, background: "var(--border)", marginBottom: 14 } }),
           E("div", { style: { fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: "0.12em" } }, "All nearby restaurants")
         ),
