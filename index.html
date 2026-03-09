@@ -1170,21 +1170,36 @@ function DateWizard(props) {
 
   // Step 0: pick date type
   if (step === 0) {
+    var numberedTypes = [
+      { key: "first",       num: "1",  label: "First Date",    sub: "Fun, lively, no pressure" },
+      { key: "second",      num: "2",  label: "Second Date",   sub: "Show you were paying attention" },
+      { key: "third",       num: "3",  label: "Third Date",    sub: "Make it genuinely memorable" },
+      { key: "anniversary", num: "♡",  label: "Anniversary",   sub: "Pull out every stop" },
+      { key: "casual",      num: "~",  label: "Casual Hang",   sub: "Vibes over impressions" }
+    ];
     return E("div", { className: "modal-overlay",
       onMouseDown: function(e) { if (e.target === e.currentTarget) onClose(); }
     },
       E("div", { className: "modal-sheet" },
         E("div", { className: "modal-handle" }),
-        E("div", { className: "modal-title" }, "What kind of date? 🌹"),
-        typeList.map(function(key) {
-          var p = DATE_PROFILES[key];
-          return E("button", { key: key, className: "dw-type-card", onClick: function() { pickType(key); } },
-            E("div", { className: "dw-type-emoji" }, p.emoji),
-            E("div", null,
-              E("div", { className: "dw-type-name" }, p.title),
-              E("div", { className: "dw-type-tag" }, p.tagline)
+        E("div", { style: { fontFamily: "Cormorant Garamond, serif", fontSize: 28, fontWeight: 400, marginBottom: 6 } }, "Which date is this? 🌹"),
+        E("div", { style: { fontSize: 13, color: "var(--text3)", marginBottom: 22, lineHeight: 1.5 } },
+          "Tell us where you are — we'll tell you exactly what kind of place to pick."
+        ),
+        numberedTypes.map(function(dt) {
+          return E("button", { key: dt.key, className: "dw-type-card", onClick: function() { pickType(dt.key); } },
+            E("div", { style: {
+              width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+              background: "rgba(224,96,122,0.12)", border: "1.5px solid rgba(224,96,122,0.3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontFamily: "Cormorant Garamond, serif", fontSize: dt.num.length === 1 ? 28 : 22,
+              fontWeight: 400, color: "var(--love)"
+            }}, dt.num),
+            E("div", { style: { flex: 1 } },
+              E("div", { style: { fontFamily: "Cormorant Garamond, serif", fontSize: 22, fontWeight: 400, color: "var(--text)" } }, dt.label),
+              E("div", { style: { fontSize: 12, color: "var(--text3)", marginTop: 2 } }, dt.sub)
             ),
-            E("div", { style: { marginLeft: "auto", fontSize: 18, color: "var(--text3)", opacity: 0.5 } }, "›")
+            E("div", { style: { fontSize: 18, color: "var(--text3)", opacity: 0.4 } }, "›")
           );
         })
       )
@@ -1262,6 +1277,101 @@ function FindTab(props) {
   var _locText = useState(""); var locText = _locText[0]; var setLocText = _locText[1];
   var _locMode = useState("gps"); var locMode = _locMode[0]; var setLocMode = _locMode[1];
   var _locCoords = useState(null); var locCoords = _locCoords[0]; var setLocCoords = _locCoords[1];
+  var _diag = useState(null); var diag = _diag[0]; var setDiag = _diag[1];
+  var _diagLoading = useState(false); var diagLoading = _diagLoading[0]; var setDiagLoading = _diagLoading[1];
+
+  function runDiagnostic() {
+    setDiagLoading(true);
+    setDiag({ steps: ["Running diagnostics..."] });
+    var steps = [];
+
+    // Step 1: Geo
+    steps.push("1. Checking geolocation...");
+    setDiag({ steps: steps.slice() });
+
+    if (!navigator.geolocation) {
+      steps.push("   ❌ navigator.geolocation not available");
+      setDiag({ steps: steps.slice() }); setDiagLoading(false); return;
+    }
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      var lat = pos.coords.latitude; var lng = pos.coords.longitude;
+      steps.push("   ✅ Got location: " + lat.toFixed(4) + ", " + lng.toFixed(4));
+      setDiag({ steps: steps.slice() });
+
+      // Step 2: Google API
+      steps.push("2. Testing Google Places API...");
+      setDiag({ steps: steps.slice() });
+      fetch("https://places.googleapis.com/v1/places:searchNearby", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": GOOGLE_KEY,
+          "X-Goog-FieldMask": "places.id,places.displayName,places.rating"
+        },
+        body: JSON.stringify({
+          includedTypes: ["restaurant"], maxResultCount: 3,
+          locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius: 1600 } }
+        })
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.error) {
+          steps.push("   ❌ Google error: " + d.error.status + " — " + d.error.message);
+          steps.push("   ↳ Fix: Go to console.cloud.google.com → Enable 'Places API (New)' for key AIzaSyDg...");
+        } else if (!d.places || d.places.length === 0) {
+          steps.push("   ⚠️ Google returned 0 restaurants (no error — just empty area?)");
+        } else {
+          steps.push("   ✅ Google returned " + d.places.length + " restaurants");
+          steps.push("      e.g. " + d.places[0].displayName.text);
+        }
+        setDiag({ steps: steps.slice() });
+
+        // Step 3: Claude API
+        steps.push("3. Testing Claude API...");
+        setDiag({ steps: steps.slice() });
+        fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": CLAUDE_KEY,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true"
+          },
+          body: JSON.stringify({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 30,
+            messages: [{ role: "user", content: "Reply with just: ok" }]
+          })
+        }).then(function(r) { return r.json(); }).then(function(cd) {
+          if (cd.error) {
+            steps.push("   ❌ Claude error: " + (cd.error.message || JSON.stringify(cd.error)));
+          } else if (cd.content && cd.content[0]) {
+            steps.push("   ✅ Claude API working: " + cd.content[0].text.slice(0, 50));
+          } else {
+            steps.push("   ⚠️ Claude returned unexpected format: " + JSON.stringify(cd).slice(0, 80));
+          }
+          steps.push("— Diagnostic complete —");
+          setDiag({ steps: steps.slice() });
+          setDiagLoading(false);
+        }).catch(function(e) {
+          steps.push("   ❌ Claude network error: " + e.message);
+          steps.push("— Diagnostic complete —");
+          setDiag({ steps: steps.slice() });
+          setDiagLoading(false);
+        });
+      }).catch(function(e) {
+        steps.push("   ❌ Google network error: " + e.message);
+        steps.push("— Diagnostic complete —");
+        setDiag({ steps: steps.slice() });
+        setDiagLoading(false);
+      });
+    }, function(geoErr) {
+      steps.push("   ❌ Location denied/failed: " + geoErr.message + " (code " + geoErr.code + ")");
+      steps.push("   ↳ Fix: Allow location in browser settings and try again");
+      steps.push("   ↳ Or use 'A Neighborhood' mode and type your location");
+      steps.push("— Diagnostic complete —");
+      setDiag({ steps: steps.slice() });
+      setDiagLoading(false);
+    }, { timeout: 10000 });
+  }
 
   function geocodeLocation(text) {
     return fetch("https://places.googleapis.com/v1/places:searchText", {
@@ -1287,9 +1397,22 @@ function FindTab(props) {
   function doSearch(lat, lng) { doSearchWithCtx(lat, lng, dateCtx); }
 
   function doSearchWithCtx(lat, lng, ctx) {
+    console.log("[YumTum] doSearchWithCtx called", lat, lng, "radius:", radius);
     setStatus("Finding restaurants nearby...");
     nearbySearch(lat, lng, radius).then(function(data) {
+      console.log("[YumTum] nearbySearch raw response:", JSON.stringify(data).slice(0, 400));
+      if (data.error) {
+        setLoading(false); setStatus("");
+        setErr("Google API error: " + (data.error.message || JSON.stringify(data.error)) + " — Check that your Google API key has Places API (New) enabled in the Google Cloud Console.");
+        return;
+      }
       var places = data.places || [];
+      console.log("[YumTum] places returned:", places.length);
+      if (places.length === 0) {
+        setLoading(false); setStatus("");
+        setErr("No restaurants found nearby. Try a larger radius or different location.");
+        return;
+      }
       var filtered = places.filter(function(p) {
         if (cuisine !== "any") {
           var types = p.types || [];
@@ -1300,22 +1423,43 @@ function FindTab(props) {
         if (price !== "any") { var pr = priceLvl(p.priceLevel); if (pr.sym !== price) return false; }
         return true;
       });
+      console.log("[YumTum] filtered places:", filtered.length);
       setResults(filtered);
-      if ((query || ctx) && !needsCKey && filtered.length > 0) {
+      if (filtered.length === 0) {
+        setLoading(false); setStatus("");
+        setErr("No restaurants matched your filters. Try removing cuisine or price filters.");
+        return;
+      }
+      if ((query || ctx) && !needsCKey) {
         setStatus("Getting AI recommendations...");
         claudeFind(restaurants, filtered, query, ctx).then(function(cd) {
+          console.log("[YumTum] Claude response:", JSON.stringify(cd).slice(0, 300));
           setLoading(false); setStatus("");
+          if (cd.error) {
+            console.warn("[YumTum] Claude error:", cd.error);
+            return; // still show results, just no AI picks
+          }
           if (cd.content && cd.content[0]) {
             try {
               var txt = cd.content[0].text;
               var start = txt.indexOf("["); var end = txt.lastIndexOf("]") + 1;
               var picks = JSON.parse((start >= 0 && end > start) ? txt.slice(start, end) : txt.trim());
+              console.log("[YumTum] AI picks:", picks);
               setAiPicks(picks);
-            } catch(e) { setAiPicks(null); }
+            } catch(e) { console.warn("[YumTum] JSON parse error:", e); setAiPicks(null); }
           }
-        }).catch(function() { setLoading(false); setStatus(""); });
-      } else { setLoading(false); setStatus(""); }
-    }).catch(function() { setLoading(false); setStatus(""); setErr("Couldn't fetch restaurants."); });
+        }).catch(function(e) {
+          console.warn("[YumTum] Claude fetch error:", e);
+          setLoading(false); setStatus("");
+        });
+      } else {
+        setLoading(false); setStatus("");
+      }
+    }).catch(function(e) {
+      console.error("[YumTum] nearbySearch fetch error:", e);
+      setLoading(false); setStatus("");
+      setErr("Network error reaching Google. Check your internet connection and that the Google API key has Places API (New) enabled at console.cloud.google.com.");
+    });
   }
 
   function handleFind() {
@@ -1504,7 +1648,19 @@ function FindTab(props) {
         })
       ),
       err && E("div", { style: { margin: "8px 20px 4px", padding: "12px 14px", background: "rgba(201,71,42,0.1)", borderRadius: 10, fontSize: 13, color: "var(--accent2)", lineHeight: 1.5 } }, err),
-      locMode === "text" && loading && E("div", { style: { textAlign: "center", padding: "20px 0" } },
+
+      E("div", { style: { padding: "6px 20px 0" } },
+        E("button", {
+          onClick: function() { diag ? setDiag(null) : runDiagnostic(); },
+          disabled: diagLoading,
+          style: { fontSize: 12, color: "var(--text3)", padding: "5px 0", textDecoration: "underline" }
+        }, diagLoading ? "Running diagnostics..." : (diag ? "Hide diagnostics" : "Not seeing results? Run diagnostic"))
+      ),
+      diag && E("div", { style: { margin: "6px 20px 8px", padding: "12px 14px", background: "var(--bg3)", borderRadius: 10, border: "1px solid var(--border2)" } },
+        diag.steps.map(function(s, i) {
+          return E("div", { key: i, style: { fontSize: 12, color: s.indexOf("✅") >= 0 ? "#5aab72" : s.indexOf("❌") >= 0 ? "#e05a38" : s.indexOf("⚠️") >= 0 ? "#f5a623" : "var(--text3)", fontFamily: "monospace", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-all" } }, s);
+        })
+      ),
         E("div", { className: "spinner", style: { margin: "0 auto 10px" } }),
         E("div", { style: { fontSize: 13, color: "var(--text3)" } }, status)
       ),
