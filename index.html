@@ -779,6 +779,7 @@ function SpotsTab(props) {
   var restaurants = props.restaurants;
   var onEdit = props.onEdit;
   var onDelete = props.onDelete;
+  var onBack = props.onBack || function() {};
 
   var _filter = useState("all"); var filter = _filter[0]; var setFilter = _filter[1];
   var _search = useState(""); var search = _search[0]; var setSearch = _search[1];
@@ -801,6 +802,7 @@ function SpotsTab(props) {
   if (restaurants.length === 0) {
     return E("div", null,
       E("div", { className: "page-header" },
+        E("button", { onClick: onBack, style: { fontSize: 13, color: "var(--text3)", padding: "4px 0", marginBottom: 4 } }, "← Back"),
         E("div", { className: "page-title" }, "My Spots")
       ),
       E("div", { className: "tab-content" },
@@ -815,6 +817,7 @@ function SpotsTab(props) {
 
   return E("div", null,
     E("div", { className: "page-header" },
+      E("button", { onClick: onBack, style: { fontSize: 13, color: "var(--text3)", padding: "4px 0", marginBottom: 4 } }, "← Back"),
       E("div", { className: "page-title" },
         "My Spots",
         E("span", { className: "count-badge" }, restaurants.length)
@@ -892,6 +895,7 @@ function SpotCard(props) {
 // ======================================================
 function RateTab(props) {
   var onSave = props.onSave;
+  var onBack = props.onBack || function() {};
   return E("div", null,
     E("div", { className: "page-header" },
       E("div", { className: "page-title" }, "Rate a Restaurant"),
@@ -945,6 +949,7 @@ function DateModal(props) {
 // ======================================================
 function FindTab(props) {
   var restaurants = props.restaurants;
+  var onBack = props.onBack || function() {};
 
   var _query = useState(""); var query = _query[0]; var setQuery = _query[1];
   var _radius = useState(1600); var radius = _radius[0]; var setRadius = _radius[1];
@@ -1187,7 +1192,7 @@ function MainApp(props) {
   var user = props.user;
   var onLogout = props.onLogout;
 
-  var _tab = useState("spots"); var tab = _tab[0]; var setTab = _tab[1];
+  var _tab = useState("home"); var tab = _tab[0]; var setTab = _tab[1];
   var _rests = useState([]); var restaurants = _rests[0]; var setRestaurants = _rests[1];
   var _editing = useState(null); var editing = _editing[0]; var setEditing = _editing[1];
   var _loaded = useState(false); var loaded = _loaded[0]; var setLoaded = _loaded[1];
@@ -1204,7 +1209,6 @@ function MainApp(props) {
   function handleSave(rec, existingId, setSaving) {
     rec.user_id = user.id;
     if (existingId) {
-      // Update
       sbPatch("restaurants?id=eq." + existingId, rec, token).then(function(data) {
         setSaving(false);
         if (Array.isArray(data) && data.length > 0) {
@@ -1213,7 +1217,6 @@ function MainApp(props) {
         }
       }).catch(function() { setSaving(false); });
     } else {
-      // Check if same google_place_id already exists for this user
       var gpid = rec.google_place_id;
       var existing_r = gpid ? restaurants.find(function(r) { return r.google_place_id === gpid; }) : null;
       if (existing_r) {
@@ -1221,7 +1224,7 @@ function MainApp(props) {
           setSaving(false);
           if (Array.isArray(data) && data.length > 0) {
             setRestaurants(function(prev) { return prev.map(function(r) { return r.id === existing_r.id ? data[0] : r; }); });
-            setTab("spots");
+            setTab("home");
           }
         }).catch(function() { setSaving(false); });
       } else {
@@ -1229,10 +1232,10 @@ function MainApp(props) {
           setSaving(false);
           if (Array.isArray(data) && data.length > 0) {
             setRestaurants(function(prev) { return [data[0]].concat(prev); });
-            setTab("spots");
+            setTab("home");
           } else if (data && data.id) {
             setRestaurants(function(prev) { return [data].concat(prev); });
-            setTab("spots");
+            setTab("home");
           }
         }).catch(function() { setSaving(false); });
       }
@@ -1246,40 +1249,69 @@ function MainApp(props) {
     });
   }
 
+  if (tab === "home") {
+    var loveCount = restaurants.filter(function(r) { return r.rating === "love"; }).length;
+    var likeCount = restaurants.filter(function(r) { return r.rating === "like"; }).length;
+    return E("div", { style: { minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column" } },
+      E("div", { style: { paddingTop: "calc(52px + var(--safe-t))", paddingLeft: 24, paddingRight: 24, paddingBottom: 16 } },
+        E("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" } },
+          E("div", null,
+            E("div", { style: { fontSize: 13, color: "var(--text3)", marginBottom: 6 } }, firstName ? "Hey, " + firstName : "Welcome back"),
+            E("div", { className: "serif", style: { fontSize: 44, fontWeight: 300, lineHeight: 1 } }, "YumTum")
+          ),
+          E("button", { onClick: onLogout, style: { fontSize: 12, color: "var(--text3)", padding: "7px 14px", border: "1px solid var(--border)", borderRadius: 20, marginTop: 10 } }, "Sign out")
+        ),
+        restaurants.length > 0 && E("div", { style: { marginTop: 10, fontSize: 12, color: "var(--text3)" } },
+          restaurants.length + " spots saved"
+        )
+      ),
+      E("div", { style: { flex: 1, padding: "8px 20px calc(44px + var(--safe-b))", display: "flex", flexDirection: "column", gap: 14 } },
+        E("button", { onClick: function() { setTab("spots"); }, style: {
+          flex: 1, background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: 20,
+          padding: "28px 26px", textAlign: "left", display: "flex", flexDirection: "column", justifyContent: "space-between"
+        }},
+          E("div", { style: { fontSize: 42 } }, "🗂"),
+          E("div", null,
+            E("div", { className: "serif", style: { fontSize: 30, fontWeight: 400, marginBottom: 5 } }, "My Spots"),
+            E("div", { style: { fontSize: 13, color: "var(--text3)" } }, restaurants.length === 0 ? "Your saved restaurants" : restaurants.length + " restaurants saved")
+          )
+        ),
+        E("button", { onClick: function() { setTab("rate"); }, style: {
+          flex: 1, background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: 20,
+          padding: "28px 26px", textAlign: "left", display: "flex", flexDirection: "column", justifyContent: "space-between"
+        }},
+          E("div", { style: { fontSize: 42 } }, "⭐"),
+          E("div", null,
+            E("div", { className: "serif", style: { fontSize: 30, fontWeight: 400, marginBottom: 5 } }, "Rate a New Spot"),
+            E("div", { style: { fontSize: 13, color: "var(--text3)" } }, "Add a restaurant to your list")
+          )
+        ),
+        E("button", { onClick: function() { setTab("find"); }, style: {
+          flex: 1, background: "rgba(201,71,42,0.07)", border: "1px solid rgba(201,71,42,0.28)", borderRadius: 20,
+          padding: "28px 26px", textAlign: "left", display: "flex", flexDirection: "column", justifyContent: "space-between"
+        }},
+          E("div", { style: { fontSize: 42 } }, "📍"),
+          E("div", null,
+            E("div", { className: "serif", style: { fontSize: 30, fontWeight: 400, marginBottom: 5, color: "var(--accent2)" } }, "Find a Spot"),
+            E("div", { style: { fontSize: 13, color: "var(--text3)" } }, "AI recommendations near you")
+          )
+        )
+      )
+    );
+  }
+
   var tabContent;
   if (tab === "spots") {
-    tabContent = E(SpotsTab, { restaurants: restaurants, onEdit: function(r) { setEditing(r); }, onDelete: handleDelete });
+    tabContent = E(SpotsTab, { restaurants: restaurants, onEdit: function(r) { setEditing(r); }, onDelete: handleDelete, onBack: function() { setTab("home"); } });
   } else if (tab === "rate") {
-    tabContent = E(RateTab, { onSave: handleSave, onSwitchTab: setTab });
+    tabContent = E(RateTab, { onSave: handleSave, onSwitchTab: setTab, onBack: function() { setTab("home"); } });
   } else if (tab === "find") {
-    tabContent = E(FindTab, { restaurants: restaurants });
+    tabContent = E(FindTab, { restaurants: restaurants, onBack: function() { setTab("home"); } });
   }
 
   return E("div", { className: "screen" },
     tabContent,
-
-    editing && E(EditModal, {
-      existing: editing,
-      onSave: handleSave,
-      onClose: function() { setEditing(null); }
-    }),
-
-    E("div", { className: "bottom-nav" },
-      [
-        { key: "spots", icon: "🗂", label: "My Spots" },
-        { key: "rate", icon: "⭐", label: "Rate" },
-        { key: "find", icon: "🔍", label: "Find" }
-      ].map(function(t) {
-        return E("button", { key: t.key, className: "nav-btn" + (tab === t.key ? " active" : ""), onClick: function() { setTab(t.key); } },
-          E("span", { className: "nav-icon" }, t.icon),
-          E("span", null, t.label)
-        );
-      }),
-      E("button", { className: "nav-btn", onClick: onLogout, style: { maxWidth: 60 } },
-        E("span", { className: "nav-icon" }, "👤"),
-        E("span", null, firstName || "Out")
-      )
-    )
+    editing && E(EditModal, { existing: editing, onSave: handleSave, onClose: function() { setEditing(null); } })
   );
 }
 
