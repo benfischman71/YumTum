@@ -544,7 +544,83 @@ function nearbySearch(lat, lng, radius) {
   }).then(function(r) { return r.json(); });
 }
 
-// Claude recommendation
+// Claude-directed search: Claude picks the search queries, Google executes, Claude ranks
+function claudeDirectedSearch(lat, lng, radius, dateContext, query, userHistory) {
+  var histStr = userHistory.length === 0 ? "No history yet."
+    : userHistory.map(function(r) {
+        return r.name + ": " + ratingLabel(r.rating) + (r.cuisine ? " (" + r.cuisine + ")" : "");
+      }).join("; ");
+
+  var dateType = dateContext
+    ? (dateContext.indexOf("First Date") >= 0 ? "first date"
+      : dateContext.indexOf("Second Date") >= 0 ? "second date"
+      : dateContext.indexOf("Third Date") >= 0 ? "third date"
+      : dateContext.indexOf("Anniversary") >= 0 ? "anniversary"
+      : dateContext.indexOf("Casual") >= 0 ? "casual hang" : "date")
+    : "dinner";
+
+  var queryPrompt = "You are a NYC restaurant expert helping someone pick a " + dateType + " spot."
+    + " User taste history: " + histStr + "."
+    + (query ? " They also said: " + query + "." : "")
+    + " Generate 4 specific Google Places search queries to find the BEST, coolest, most interesting restaurants for this occasion."
+    + " For a first date: target natural wine bars, izakayas, cool tapas spots, hip gastropubs - NOT chains, NOT tourist spots, NOT boring classics."
+    + " Each query should target a specific TYPE of cool place that would work for a " + dateType + "."
+    + " Return ONLY a JSON array of 4 search query strings. Example: ["natural wine bar west village", "izakaya lower east side"]";
+
+  return fetch(SUPABASE_URL + "/functions/v1/claude-proxy", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_ANON_KEY },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 200,
+      messages: [{ role: "user", content: queryPrompt }]
+    })
+  }).then(function(r) { return r.json(); }).then(function(cd) {
+    var text = (cd.content || []).map(function(b) { return b.text || ""; }).join("");
+    var match = text.match(/\[.*?\]/s);
+    if (!match) return null;
+    var queries;
+    try { queries = JSON.parse(match[0]); } catch(e) { return null; }
+    if (!queries || !queries.length) return null;
+
+    // Run all Google searches in parallel with location restriction
+    var searchPromises = queries.map(function(q) {
+      return fetch("https://places.googleapis.com/v1/places:searchText", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": GOOGLE_KEY,
+          "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.priceLevel,places.photos,places.types,places.primaryTypeDisplayName"
+        },
+        body: JSON.stringify({
+          textQuery: q,
+          maxResultCount: 8,
+          locationRestriction: {
+            circle: { center: { latitude: lat, longitude: lng }, radius: Math.min(radius || 1600, 1200) }
+          },
+          includedType: "restaurant"
+        })
+      }).then(function(r) { return r.json(); });
+    });
+
+    return Promise.all(searchPromises).then(function(results) {
+      // Deduplicate by place id
+      var seen = {};
+      var allPlaces = [];
+      results.forEach(function(data) {
+        (data.places || []).forEach(function(p) {
+          if (p.id && !seen[p.id]) {
+            seen[p.id] = true;
+            allPlaces.push(p);
+          }
+        });
+      });
+      return allPlaces;
+    });
+  });
+}
+
+// Claude recommendation with web search
 function claudeFind(userHistory, nearby, query, dateContext) {
   var histStr = userHistory.length === 0 ? "No history yet."
     : userHistory.map(function(r) {
@@ -557,10 +633,10 @@ function claudeFind(userHistory, nearby, query, dateContext) {
     return i + ". " + p.displayName.text + " | " + ct + " | " + pr.sym + " | Google " + (p.rating || "?") + "/5 | " + (p.formattedAddress || "");
   }).join("\n");
 
-  var firstDateRules = "FIRST DATE - RANKING RULES: BEST picks: wine bars, tapas, izakayas, natural wine bars, gastropubs, any place with small sharing plates + real drinks. Sit-down pizza with wine/cocktails can work. NEVER recommend: bakeries (Magnolia Bakery etc - bright lights, no alcohol, wrong energy entirely), cafes, fast casual, fine dining/tasting menus (too formal, trapped, chemistry killer), loud clubs. Price sweet spot $$. Reasons should mention WHY it fits date 1 specifically.";
-  var secondDateRules = "SECOND DATE - Step up from date 1. Chef-driven spots, rooftops, places with a story. Reservation signals effort. Better wine list. Avoid chains and overly casual.";
-  var thirdDateRules = "THIRD DATE - This is the one they remember. Acclaimed, great atmosphere, wow factor. $$-$$$ is right. Be specific about why it creates a memorable night.";
-  var anniversaryRules = "ANNIVERSARY - Go all out. Fine dining, chef tables, tasting menus are correct here. Price secondary to experience. Only truly exceptional picks.";
+  var firstDateRules = "FIRST DATE - The restaurant pick is a proxy for who he is. Pick somewhere with PERSONALITY and a point of view - discovered, not defaulted to. Natural wine bars, izakayas, cool tapas, hip gastropubs with a real drinks program. The spot should feel like something she texts her friends about. NEVER: Gramercy Tavern types (business dinner energy), chains, tourist traps, bakeries, cafes, fast casual, fine dining (trapped/anxious). Price sweet spot $$.";
+  var secondDateRules = "SECOND DATE - Show you have taste. Chef-driven, interesting wine list, places with a story. Reservation signals effort. Notch above date 1 but still cool not stuffy.";
+  var thirdDateRules = "THIRD DATE - The one she remembers. Real wow factor. Acclaimed, beautiful room, incredible food. Still cool, not stuffy fine dining.";
+  var anniversaryRules = "ANNIVERSARY - Go all out. Truly exceptional only. Fine dining, chef tables, tasting menus. Price secondary to experience.";
 
   var dateRules = dateContext
     ? (dateContext.indexOf("First Date") >= 0 ? firstDateRules
@@ -569,17 +645,16 @@ function claudeFind(userHistory, nearby, query, dateContext) {
       : dateContext.indexOf("Anniversary") >= 0 ? anniversaryRules : "")
     : "";
 
-  var contextLine = dateContext
-    ? "DATE NIGHT. Type + preferences: " + dateContext + ". " + dateRules
-    : "Context: " + (query || "General recommendation.");
-
-  var prompt = "You are an expert restaurant matchmaker for 20-30 year olds who understands dating psychology and venue science.\n\n"
-    + "User taste history: " + histStr + "\n\n"
-    + "Nearby options:\n" + nearbyStr + "\n\n"
-    + contextLine + "\n"
-    + (query ? "User also said: " + query + "\n" : "")
-    + "\nPick the best 3. Be opinionated and specific. Skip bakeries/cafes for dates. Write reasons that name the specific quality that fits this date type (lighting, sharing format, vibe, price). "
-    + "Return ONLY valid JSON: [{\"index\":0,\"name\":\"name\",\"reason\":\"specific 1-2 sentence reason\"}]";
+  var prompt = "You are the ultimate restaurant matchmaker for 20-30 year olds. The restaurant pick signals who he is - cool and discovered beats safe and generic every time.\n\n"
+    + "USER TASTE HISTORY: " + histStr + "\n\n"
+    + "CANDIDATE RESTAURANTS FROM GOOGLE:\n" + nearbyStr + "\n\n"
+    + "OCCASION: " + (dateContext || "General recommendation") + ". " + dateRules + "\n"
+    + (query ? "USER PREFERENCES: " + query + "\n" : "")
+    + "\nYOUR JOB:\n"
+    + "1. Use web search to check the current reputation of the most promising candidates - Eater, The Infatuation, NYMag, recent reviews. Still hot? Chef leave? Tourist trap? Local favorite?\n"
+    + "2. Pick the 3 best based on real current knowledge plus the occasion rules.\n"
+    + "3. Write reasons grounded in actual knowledge of each place - mention the vibe, what makes it work, why it fits this occasion.\n"
+    + "Return ONLY a valid JSON array: [{"index":0,"name":"exact restaurant name","reason":"2 sentence reason based on real knowledge"}]";
 
   return fetch(SUPABASE_URL + "/functions/v1/claude-proxy", {
     method: "POST",
@@ -589,12 +664,12 @@ function claudeFind(userHistory, nearby, query, dateContext) {
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 600,
+      max_tokens: 2000,
+      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }],
       messages: [{ role: "user", content: prompt }]
     })
   }).then(function(r) { return r.json(); });
 }
-
 // ======================================================
 // GLOBAL NAV
 // ======================================================
@@ -1514,7 +1589,23 @@ function FindTab(props) {
       "night_club", "bar", "sandwich_shop", "hamburger_restaurant",
       "ice_cream_shop", "donut_shop", "drugstore", "grocery_store"];
 
-    // If user typed a freeform query, use searchText with location bias for better relevance
+    // If date context active, use Claude-directed search for smarter results
+    if (ctx && !query) {
+      setStatus("Claude is curating the perfect spots...");
+      claudeDirectedSearch(lat, lng, radius, ctx, query, restaurants).then(function(places) {
+        if (!places || places.length === 0) {
+          // Fallback to regular nearby search
+          nearbySearch(lat, lng, radius).then(function(data) { processPlaces(data.places || [], ctx); });
+          return;
+        }
+        processPlaces(places, ctx);
+      }).catch(function() {
+        nearbySearch(lat, lng, radius).then(function(data) { processPlaces(data.places || [], ctx); });
+      });
+      return;
+    }
+
+    // Standard search: freeform query or no context
     var searchPromise;
     if (query && query.trim()) {
       var textQuery = query.trim() + " restaurant";
@@ -1529,7 +1620,7 @@ function FindTab(props) {
           textQuery: textQuery,
           maxResultCount: 20,
           locationRestriction: {
-            circle: { center: { latitude: lat, longitude: lng }, radius: (radius || 1600) * 3 }
+            circle: { center: { latitude: lat, longitude: lng }, radius: Math.min(radius || 1600, 800) }
           },
           includedType: "restaurant"
         })
@@ -1539,13 +1630,12 @@ function FindTab(props) {
     }
 
     searchPromise.then(function(data) {
-      console.log("[FindASpot] search raw response:", JSON.stringify(data).slice(0, 400));
-      if (data.error) {
-        setLoading(false); setStatus("");
-        setErr("Google API error: " + (data.error.message || JSON.stringify(data.error)));
-        return;
-      }
-      var places = data.places || [];
+      processPlaces(data.places || [], ctx);
+    });
+
+    function processPlaces(places, ctx) {
+      console.log("[FindASpot] search raw response:", places.length, "places");
+      var places = places || [];
       console.log("[FindASpot] places returned:", places.length);
       if (places.length === 0) {
         setLoading(false); setStatus("");
@@ -1596,11 +1686,15 @@ function FindTab(props) {
             console.warn("[FindASpot] Claude error:", cd.error);
             return;
           }
-          if (cd.content && cd.content[0]) {
+          if (cd.content) {
             try {
-              var txt = cd.content[0].text;
-              var start = txt.indexOf("["); var end = txt.lastIndexOf("]") + 1;
-              var picks = JSON.parse((start >= 0 && end > start) ? txt.slice(start, end) : txt.trim());
+              // Web search responses have multiple blocks - find the last text block with JSON
+              var allText = cd.content
+                .filter(function(b) { return b.type === "text" && b.text; })
+                .map(function(b) { return b.text; })
+                .join("");
+              var start = allText.lastIndexOf("["); var end = allText.lastIndexOf("]") + 1;
+              var picks = JSON.parse((start >= 0 && end > start) ? allText.slice(start, end) : allText.trim());
               console.log("[FindASpot] AI picks:", picks);
               setAiPicks(picks);
             } catch(e) { console.warn("[FindASpot] JSON parse error:", e); setAiPicks(null); }
@@ -1612,11 +1706,7 @@ function FindTab(props) {
       } else {
         setLoading(false); setStatus("");
       }
-    }).catch(function(e) {
-      console.error("[FindASpot] search fetch error:", e);
-      setLoading(false); setStatus("");
-      setErr("Network error reaching Google. Check your internet connection.");
-    });
+    }  // end processPlaces
   }
 
   function handleFind() {
