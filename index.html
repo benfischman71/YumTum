@@ -497,6 +497,7 @@ function LoginFormInner(props) {
   var _pw = S(""); var pw = _pw[0]; var setPw = _pw[1];
   var _err = S(""); var err = _err[0]; var setErr = _err[1];
   var _ld = S(false); var loading = _ld[0]; var setLoading = _ld[1];
+  var _rem = S(false); var remember = _rem[0]; var setRemember = _rem[1];
 
   function handleSubmit() {
     if (!email || !pw) { setErr("Please fill in all fields."); return; }
@@ -515,7 +516,7 @@ function LoginFormInner(props) {
         return;
       }
       if (data.access_token) {
-        onLogin(data.access_token, data.user);
+        onLogin(data.access_token, data.user, remember);
       } else if (data.user && isSignup) {
         setErr("Account created! Please sign in.");
         onToggle();
@@ -552,6 +553,18 @@ function LoginFormInner(props) {
         onKeyDown: function(e) { if (e.key === "Enter") handleSubmit(); },
         style: { fontSize: 16 }
       })
+    ),
+    !isSignup && E("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 18 } },
+      E("div", {
+        onClick: function() { setRemember(!remember); },
+        style: {
+          width: 20, height: 20, borderRadius: 5, border: "1px solid var(--border2)",
+          background: remember ? "var(--accent)" : "transparent",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer", flexShrink: 0, transition: "background 0.15s"
+        }
+      }, remember ? E("span", { style: { color: "#fff", fontSize: 13, fontWeight: 600 } }, "✓") : null),
+      E("span", { style: { fontSize: 13, color: "var(--text3)", cursor: "pointer" }, onClick: function() { setRemember(!remember); } }, "Stay signed in for 30 days")
     ),
     E("button", { className: "btn-primary", onClick: handleSubmit, disabled: loading },
       loading ? "..." : (isSignup ? "Create Account" : "Sign In")
@@ -601,6 +614,9 @@ function AddRestaurantForm(props) {
   var _saving = useState(false); var saving = _saving[0]; var setSaving = _saving[1];
   var _showAc = useState(false); var showAc = _showAc[0]; var setShowAc = _showAc[1];
   var _err = useState(""); var formErr = _err[0]; var setFormErr = _err[1];
+  var _nearbyLoad = useState(false); var nearbyLoad = _nearbyLoad[0]; var setNearbyLoad = _nearbyLoad[1];
+  var _nearbyList = useState([]); var nearbyList = _nearbyList[0]; var setNearbyList = _nearbyList[1];
+  var _showNearby = useState(false); var showNearby = _showNearby[0]; var setShowNearby = _showNearby[1];
 
   var debouncedSearch = useCallback(
     debounce(function(val) {
@@ -656,6 +672,39 @@ function AddRestaurantForm(props) {
     }).catch(function() { setPdLoading(false); });
   }
 
+  function handleNearMe() {
+    setNearbyLoad(true); setShowNearby(false); setShowAc(false);
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      nearbySearch(pos.coords.latitude, pos.coords.longitude, 1600).then(function(data) {
+        setNearbyLoad(false);
+        var places = (data.places || []).slice(0, 12);
+        setNearbyList(places);
+        setShowNearby(true);
+      }).catch(function() { setNearbyLoad(false); });
+    }, function() {
+      setNearbyLoad(false);
+    }, { timeout: 8000 });
+  }
+
+  function selectNearbyPlace(p) {
+    setShowNearby(false);
+    var pr = priceLvl(p.priceLevel);
+    var ph = p.photos && p.photos.length > 0 ? photoUrl(p.photos[0].name) : null;
+    var cu = p.primaryTypeDisplayName ? p.primaryTypeDisplayName.text : cuisineFromTypes(p.types);
+    var city = cityFromAddress(p.formattedAddress);
+    var lat = p.location ? p.location.latitude : null;
+    var lng = p.location ? p.location.longitude : null;
+    setPlace({
+      google_place_id: p.id,
+      name: p.displayName.text,
+      address: p.formattedAddress || "",
+      city: city, lat: lat, lng: lng,
+      cuisine: cu, price_level: pr.num, price_symbol: pr.sym,
+      photo_url: ph, google_rating: p.rating || null
+    });
+    setQuery(p.displayName.text);
+  }
+
   function handleSave() {
     if (!query.trim()) { setFormErr("Please enter a restaurant name."); return; }
     if (!rating) { setFormErr("Please select your rating."); return; }
@@ -675,10 +724,21 @@ function AddRestaurantForm(props) {
     ),
     E("div", { style: { marginBottom: 20, marginTop: 16 } },
       E("p", { className: "section-label" }, "Restaurant"),
+      E("div", { style: { display: "flex", gap: 8, marginBottom: 8 } },
+        E("button", {
+          onClick: handleNearMe,
+          disabled: nearbyLoad || needsKey,
+          style: {
+            padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border2)",
+            background: "var(--bg3)", color: nearbyLoad ? "var(--text3)" : "var(--accent2)",
+            fontSize: 13, whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.15s"
+          }
+        }, nearbyLoad ? "Finding..." : "📍 Near me now")
+      ),
       E("div", { className: "autocomplete-wrap" },
         E("input", {
           type: "text",
-          placeholder: needsKey ? "Type restaurant name..." : "Search for a restaurant...",
+          placeholder: needsKey ? "Type restaurant name..." : "Or search by name...",
           value: query,
           onChange: function(e) { onQueryChange(e.target.value); },
           onFocus: function() { if (suggestions.length > 0) setShowAc(true); },
@@ -1322,8 +1382,36 @@ function App() {
   var _token = useState(null); var token = _token[0]; var setToken = _token[1];
   var _user = useState(null); var user = _user[0]; var setUser = _user[1];
 
-  function handleLogin(t, u) { setToken(t); setUser(u); }
-  function handleLogout() { setToken(null); setUser(null); }
+  useEffect(function() {
+    try {
+      var saved = localStorage.getItem("yumtum_session");
+      if (saved) {
+        var sess = JSON.parse(saved);
+        if (sess && sess.token && sess.user && sess.expires && Date.now() < sess.expires) {
+          setToken(sess.token);
+          setUser(sess.user);
+        } else {
+          localStorage.removeItem("yumtum_session");
+        }
+      }
+    } catch(e) {}
+  }, []);
+
+  function handleLogin(t, u, remember) {
+    setToken(t); setUser(u);
+    if (remember) {
+      try {
+        localStorage.setItem("yumtum_session", JSON.stringify({
+          token: t, user: u,
+          expires: Date.now() + 30 * 24 * 60 * 60 * 1000
+        }));
+      } catch(e) {}
+    }
+  }
+  function handleLogout() {
+    setToken(null); setUser(null);
+    try { localStorage.removeItem("yumtum_session"); } catch(e) {}
+  }
 
   if (!token) {
     return E(LoginScreen, { onLogin: handleLogin });
