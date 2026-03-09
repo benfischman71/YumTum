@@ -72,6 +72,47 @@
     }
     .page-title { font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 300; }
     .page-sub { font-size: 11px; color: var(--text3); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.12em; }
+    /* GLOBAL NAV */
+    .global-nav {
+      position: sticky; top: 0; z-index: 50;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+      padding-top: calc(10px + var(--safe-t));
+    }
+    .global-nav-row1 {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px 10px;
+    }
+    .nav-logo {
+      font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 300;
+      letter-spacing: -0.01em; color: var(--text3);
+    }
+    .nav-logo span { color: var(--accent2); }
+    .nav-icons { display: flex; align-items: center; gap: 4px; }
+    .nav-icon-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: 6px 8px; border-radius: 8px; font-size: 9px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.08em; transition: all 0.15s;
+    }
+    .nav-icon-btn:active { background: var(--bg3); }
+    .nav-icon-btn.active { color: var(--accent2); }
+    .nav-icon-btn .ni { font-size: 18px; line-height: 1; }
+    .nav-date-row {
+      padding: 0 16px 12px;
+    }
+    .nav-date-btn {
+      width: 100%; padding: 11px 18px;
+      background: linear-gradient(135deg, rgba(224,96,122,0.18) 0%, rgba(180,50,80,0.14) 100%);
+      border: 1.5px solid rgba(224,96,122,0.4); border-radius: 50px;
+      display: flex; align-items: center; gap: 10px;
+      transition: all 0.18s; cursor: pointer;
+    }
+    .nav-date-btn:active { opacity: 0.85; transform: scale(0.98); }
+    .nav-date-btn.active { background: linear-gradient(135deg, rgba(224,96,122,0.3) 0%, rgba(180,50,80,0.24) 100%); border-color: var(--love); }
+    .nav-date-icon { font-size: 20px; line-height: 1; }
+    .nav-date-label { flex: 1; text-align: left; }
+    .nav-date-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--love); font-weight: 400; line-height: 1; }
+    .nav-date-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+    .nav-date-arrow { font-size: 16px; color: var(--love); opacity: 0.5; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
     .btn-primary {
       background: var(--accent); color: #fff; border-radius: 11px;
@@ -557,6 +598,65 @@ function claudeFind(userHistory, nearby, query, dateContext) {
 }
 
 // ======================================================
+// GLOBAL NAV
+// ======================================================
+function GlobalNav(props) {
+  var tab = props.tab;
+  var setTab = props.setTab;
+  var showDate = props.showDate;
+  var setShowDate = props.setShowDate;
+  var dateCtx = props.dateCtx;
+  var setDateCtx = props.setDateCtx;
+
+  return E("div", { className: "global-nav" },
+    E("div", { className: "global-nav-row1" },
+      E("button", { onClick: function() { setTab("home"); }, className: "nav-logo" },
+        "Find", E("span", null, "ASpot")
+      ),
+      E("div", { className: "nav-icons" },
+        E("button", { className: "nav-icon-btn" + (tab === "spots" ? " active" : ""), onClick: function() { setTab("spots"); } },
+          E("span", { className: "ni" }, "🗂"),
+          E("span", null, "Spots")
+        ),
+        E("button", { className: "nav-icon-btn" + (tab === "rate" ? " active" : ""), onClick: function() { setTab("rate"); } },
+          E("span", { className: "ni" }, "⭐"),
+          E("span", null, "Rate")
+        ),
+        E("button", { className: "nav-icon-btn" + (tab === "find" ? " active" : ""), onClick: function() { setTab("find"); } },
+          E("span", { className: "ni" }, "📍"),
+          E("span", null, "Find")
+        ),
+        E("button", { className: "nav-icon-btn" + (tab === "profile" ? " active" : ""), onClick: function() { setTab("profile"); },
+          style: { opacity: 0.5 }
+        },
+          E("span", { className: "ni" }, "🧩"),
+          E("span", null, "Profile")
+        ),
+        E("button", { className: "nav-icon-btn" + (tab === "account" ? " active" : ""), onClick: function() { setTab("account"); },
+          style: { opacity: 0.5 }
+        },
+          E("span", { className: "ni" }, "👤"),
+          E("span", null, "Account")
+        )
+      )
+    ),
+    E("div", { className: "nav-date-row" },
+      E("button", {
+        className: "nav-date-btn" + (dateCtx ? " active" : ""),
+        onClick: function() { dateCtx ? setDateCtx(null) : setShowDate(true); }
+      },
+        E("span", { className: "nav-date-icon" }, "🌹"),
+        E("div", { className: "nav-date-label" },
+          E("div", { className: "nav-date-title" }, dateCtx ? "Date Wizard: active" : "Date Wizard"),
+          E("div", { className: "nav-date-sub" }, dateCtx ? "Tap to clear" : "1st date, 2nd date, 3rd date - AI finds the right spot")
+        ),
+        E("span", { className: "nav-date-arrow" }, dateCtx ? "×" : "›")
+      )
+    )
+  );
+}
+
+// ======================================================
 // LOGIN SCREEN
 // ======================================================
 function LoginFormInner(props) {
@@ -926,7 +1026,6 @@ function SpotsTab(props) {
   if (restaurants.length === 0) {
     return E("div", null,
       E("div", { className: "page-header" },
-        E("button", { onClick: onBack, className: "back-logo" }, "← FindASpot"),
         E("div", { className: "page-title" }, "My Spots")
       ),
       E("div", { className: "tab-content" },
@@ -941,7 +1040,6 @@ function SpotsTab(props) {
 
   return E("div", null,
     E("div", { className: "page-header" },
-      E("button", { onClick: onBack, className: "back-logo" }, "← FindASpot"),
       E("div", { className: "page-title" },
         "My Spots",
         E("span", { className: "count-badge" }, restaurants.length)
@@ -1022,7 +1120,6 @@ function RateTab(props) {
   var onBack = props.onBack || function() {};
   return E("div", null,
     E("div", { className: "page-header" },
-      E("button", { onClick: onBack, className: "back-logo" }, "← FindASpot"),
       E("div", { className: "page-title" }, "Rate a Restaurant"),
       E("div", { className: "page-sub" }, "Save your experiences")
     ),
@@ -1275,6 +1372,10 @@ function DateWizard(props) {
 function FindTab(props) {
   var restaurants = props.restaurants;
   var onBack = props.onBack || function() {};
+  var dateCtx = props.dateCtx || null;
+  var setDateCtx = props.setDateCtx || function() {};
+  var showDate = props.showDate || false;
+  var setShowDate = props.setShowDate || function() {};
 
   var _query = useState(""); var query = _query[0]; var setQuery = _query[1];
   var _radius = useState(1600); var radius = _radius[0]; var setRadius = _radius[1];
@@ -1284,8 +1385,6 @@ function FindTab(props) {
   var _results = useState([]); var results = _results[0]; var setResults = _results[1];
   var _aiPicks = useState(null); var aiPicks = _aiPicks[0]; var setAiPicks = _aiPicks[1];
   var _err = useState(""); var err = _err[0]; var setErr = _err[1];
-  var _showDate = useState(false); var showDate = _showDate[0]; var setShowDate = _showDate[1];
-  var _dateCtx = useState(null); var dateCtx = _dateCtx[0]; var setDateCtx = _dateCtx[1];
   var _status = useState(""); var status = _status[0]; var setStatus = _status[1];
   var _locText = useState(""); var locText = _locText[0]; var setLocText = _locText[1];
   var _locMode = useState("gps"); var locMode = _locMode[0]; var setLocMode = _locMode[1];
@@ -1530,127 +1629,86 @@ function FindTab(props) {
   }
 
   return E("div", null,
-    showDate && E(DateWizard, {
-      onClose: function() { setShowDate(false); },
-      onConfirm: function(result) {
-        setDateCtx(result.contextString);
-        setShowDate(false);
-        setLoading(true); setErr(""); setResults([]); setAiPicks(null);
-        if (locMode === "text" && locText.trim()) {
-          setStatus("Finding that location...");
-          geocodeLocation(locText.trim()).then(function(coords) {
-            if (!coords) { setLoading(false); setStatus(""); setErr("Couldn't find that location. Try a city or neighborhood."); return; }
-            setLocCoords(coords);
-            doSearchWithCtx(coords.lat, coords.lng, result.contextString);
-          }).catch(function() { setLoading(false); setStatus(""); setErr("Location lookup failed."); });
-        } else {
-          setStatus("Getting your location...");
-          navigator.geolocation.getCurrentPosition(function(pos) {
-            doSearchWithCtx(pos.coords.latitude, pos.coords.longitude, result.contextString);
-          }, function() {
-            setLoading(false); setStatus("");
-            setErr("Location access denied. Please allow location in your browser settings, or switch to 'A Neighborhood' and type your area.");
-          }, { timeout: 12000 });
-        }
-      }
-    }),
-    E("div", { className: "page-header" },
-      E("button", { onClick: onBack, className: "back-logo" }, "← FindASpot"),
-      E("div", { className: "page-title" }, "FindASpot")
-    ),
     E("div", { className: "tab-content" },
       (needsGKey || needsCKey) && E("div", { className: "setup-warn" },
-        needsGKey ? "⚠️ Add your Google Places API key (GOOGLE_KEY) to use Find a Spot." : "ℹ️ Add your Claude API key (CLAUDE_KEY) for AI-powered recommendations."
+        needsGKey ? "⚠️ Add your Google Places API key (GOOGLE_KEY) to use FindASpot." : "ℹ️ Add your Claude API key (CLAUDE_KEY) for AI-powered recommendations."
+      ),
+      dateCtx && E("div", { style: { margin: "0 20px 4px", padding: "10px 14px", background: "rgba(224,96,122,0.1)", borderRadius: 10, border: "1px solid rgba(224,96,122,0.25)", fontSize: 13, color: "var(--love)", display: "flex", alignItems: "center", gap: 8 } },
+        E("span", null, "🌹"),
+        E("span", { style: { flex: 1, lineHeight: 1.4 } }, dateCtx),
+        E("button", { onClick: function() { setDateCtx(null); }, style: { fontSize: 16, color: "var(--love)", opacity: 0.6, padding: "0 4px" } }, "×")
       ),
       E("div", { className: "find-controls" },
-        E("div", { style: { marginBottom: 4 } },
-          E("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
-            E("button", {
-              onClick: function() {
-                setLocMode("gps"); setLocText(""); setLocCoords(null);
-                if (needsGKey) { setErr("Google Places API key needed."); return; }
-                setLoading(true); setErr(""); setResults([]); setAiPicks(null);
-                setStatus("Getting your location...");
-                navigator.geolocation.getCurrentPosition(function(pos) {
-                  doSearchWithCtx(pos.coords.latitude, pos.coords.longitude, dateCtx);
-                }, function() {
-                  setLoading(false); setStatus("");
-                  setErr("Location access denied - please allow location in your browser settings, or type a neighborhood below.");
-                }, { timeout: 12000 });
-              },
-              disabled: loading,
-              style: {
-                flex: 1, padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 500,
-                border: locMode === "gps" ? "1.5px solid var(--accent)" : "1px solid var(--border2)",
-                background: locMode === "gps" ? "var(--accent-dim)" : "var(--bg3)",
-                color: locMode === "gps" ? "var(--accent2)" : "var(--text2)",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 5
-              }
+          E("button", {
+            onClick: function() {
+              setLocMode("gps"); setLocText(""); setLocCoords(null);
+              if (needsGKey) { setErr("Google Places API key needed."); return; }
+              setLoading(true); setErr(""); setResults([]); setAiPicks(null);
+              setStatus("Getting your location...");
+              navigator.geolocation.getCurrentPosition(function(pos) {
+                doSearchWithCtx(pos.coords.latitude, pos.coords.longitude, dateCtx);
+              }, function() {
+                setLoading(false); setStatus("");
+                setErr("Location access denied - please allow location in your browser settings, or type a neighborhood below.");
+              }, { timeout: 12000 });
             },
-              E("span", { style: { fontSize: 22 } }, "📍"),
-              E("span", null, "Near Me Now")
-            ),
-            E("button", {
-              onClick: function() { setLocMode("text"); setResults([]); setAiPicks(null); },
-              style: {
-                flex: 1, padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 500,
-                border: locMode === "text" ? "1.5px solid var(--accent)" : "1px solid var(--border2)",
-                background: locMode === "text" ? "var(--accent-dim)" : "var(--bg3)",
-                color: locMode === "text" ? "var(--accent2)" : "var(--text2)",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 5
-              }
-            },
-              E("span", { style: { fontSize: 22 } }, "🗺"),
-              E("span", null, "A Neighborhood")
-            )
-          ),
-          locMode === "text" && E("div", null,
-            E("input", {
-              type: "text",
-              placeholder: "West Village NYC, SoHo, Silver Lake LA...",
-              value: locText,
-              onChange: function(e) { setLocText(e.target.value); setLocCoords(null); },
-              onKeyDown: function(e) { if (e.key === "Enter") handleFind(); },
-              style: { fontSize: 15, marginBottom: 10 }
-            }),
-            locCoords && E("div", { style: { fontSize: 12, color: "var(--like)", marginBottom: 8, paddingLeft: 2 } },
-              "📌 Searching near " + locCoords.name
-            ),
-            E("button", {
-              className: "find-go-btn", onClick: handleFind, disabled: loading || !locText.trim()
-            }, loading ? (status || "Searching...") : "Search this area →")
-          ),
-          locMode === "gps" && loading && E("div", { style: { textAlign: "center", padding: "16px 0 4px" } },
-            E("div", { className: "spinner", style: { margin: "0 auto 10px" } }),
-            E("div", { style: { fontSize: 13, color: "var(--text3)" } }, status)
+            disabled: loading,
+            style: {
+              flex: 1, padding: "12px 8px", borderRadius: 12, fontSize: 13, fontWeight: 500,
+              border: locMode === "gps" ? "1.5px solid var(--accent)" : "1px solid var(--border2)",
+              background: locMode === "gps" ? "var(--accent-dim)" : "var(--bg3)",
+              color: locMode === "gps" ? "var(--accent2)" : "var(--text2)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+            }
+          }, "📍 Near Me Now"),
+          E("button", {
+            onClick: function() { setLocMode("text"); setResults([]); setAiPicks(null); },
+            style: {
+              flex: 1, padding: "12px 8px", borderRadius: 12, fontSize: 13, fontWeight: 500,
+              border: locMode === "text" ? "1.5px solid var(--accent)" : "1px solid var(--border2)",
+              background: locMode === "text" ? "var(--accent-dim)" : "var(--bg3)",
+              color: locMode === "text" ? "var(--accent2)" : "var(--text2)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+            }
+          }, "🗺 A Neighborhood")
+        ),
+
+        locMode === "text" && E("div", null,
+          E("input", {
+            type: "text",
+            placeholder: "West Village NYC, SoHo, Silver Lake LA...",
+            value: locText,
+            onChange: function(e) { setLocText(e.target.value); setLocCoords(null); },
+            onKeyDown: function(e) { if (e.key === "Enter") handleFind(); },
+            style: { fontSize: 15 }
+          }),
+          locCoords && E("div", { style: { fontSize: 12, color: "var(--like)", marginTop: 6, paddingLeft: 2 } },
+            "📌 Searching near " + locCoords.name
           )
         ),
-        E("button", {
-          className: "date-big-btn" + (dateCtx ? " on" : ""),
-          onClick: function() { dateCtx ? setDateCtx(null) : setShowDate(true); }
-        },
-          E("div", { className: "date-big-emoji" }, "🌹"),
-          E("div", { className: "date-big-text" },
-            E("div", { className: "date-big-title" }, dateCtx ? "Date mode on" : "Planning a date night?"),
-            E("div", { className: "date-big-sub" }, dateCtx ? "Tap to clear" : "AI picks for the occasion")
-          ),
-          E("div", { className: "date-big-arrow" }, dateCtx ? "×" : "›")
-        ),
-        E("div", { className: "find-query-wrap" },
+
+        E("div", null,
           E("input", {
-            type: "text", className: "find-query",
-            placeholder: dateCtx ? "Any vibe or preferences?" : "What are you in the mood for?",
-            value: query, onChange: function(e) { setQuery(e.target.value); },
+            type: "text",
+            placeholder: dateCtx ? "Any extra preferences?" : "Describe what you want... (optional)",
+            value: query,
+            onChange: function(e) { setQuery(e.target.value); },
             onKeyDown: function(e) { if (e.key === "Enter" && !loading) handleFind(); },
-            style: { fontSize: 16, paddingRight: 16 }
-          })
+            style: { fontSize: 15, marginBottom: 8 }
+          }),
+          E("button", {
+            className: "find-go-btn",
+            onClick: handleFind,
+            disabled: loading
+          }, loading ? E("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 10 } },
+            E("div", { className: "spinner", style: { width: 16, height: 16, borderWidth: 2 } }),
+            E("span", null, status || "Searching...")
+          ) : "Search \u2192")
         ),
-        E("button", {
-          className: "find-go-btn",
-          onClick: handleFind,
-          disabled: loading,
-          style: { marginTop: 2 }
-        }, loading ? (status || "Searching...") : "Search \u2192")
+
+        locMode === "gps" && loading && E("div", { style: { textAlign: "center", padding: "4px 0 0" } },
+          E("div", { style: { fontSize: 13, color: "var(--text3)" } }, status)
+        )
       ),
       E("div", { className: "chip-row" },
         cuisineOpts.map(function(o) {
@@ -1767,6 +1825,8 @@ function MainApp(props) {
   var _rests = useState([]); var restaurants = _rests[0]; var setRestaurants = _rests[1];
   var _editing = useState(null); var editing = _editing[0]; var setEditing = _editing[1];
   var _loaded = useState(false); var loaded = _loaded[0]; var setLoaded = _loaded[1];
+  var _dateCtx = useState(null); var dateCtx = _dateCtx[0]; var setDateCtx = _dateCtx[1];
+  var _showDate = useState(false); var showDate = _showDate[0]; var setShowDate = _showDate[1];
 
   var firstName = user && user.user_metadata ? user.user_metadata.first_name : "";
 
@@ -1882,7 +1942,9 @@ function MainApp(props) {
       textColor="#d8d0f8"; textShadow="0 1px 8px rgba(0,0,0,0.8)";
     }
     var findCardBorder = "1px solid " + cardBorder;
-    return E("div", { className: "home-wrap", style: { background: "linear-gradient(175deg, " + skyTop + " 0%, " + skyBot + " 100%)" } },
+    return E("div", null,
+      showDate && E(DateWizard, { onClose: function() { setShowDate(false); }, onConfirm: function(result) { setDateCtx(result.contextString); setShowDate(false); setTab("find"); } }),
+      E("div", { className: "home-wrap", style: { background: "linear-gradient(175deg, " + skyTop + " 0%, " + skyBot + " 100%)" } },
       E("div", { className: "home-header" },
         E("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" } },
           E("div", null,
@@ -1943,10 +2005,30 @@ function MainApp(props) {
             )
           ),
           E("div", { className: "home-card-arrow", style: { color: logoAccent, opacity: 0.5 } }, "›")
+        ),
+        E("button", {
+          onClick: function() { setShowDate(true); },
+          style: {
+            width: "100%", padding: "16px 22px", borderRadius: 50,
+            background: "linear-gradient(135deg, rgba(224,96,122,0.22) 0%, rgba(150,40,70,0.18) 100%)",
+            border: "1.5px solid rgba(224,96,122,0.45)",
+            display: "flex", alignItems: "center", gap: 14,
+            backdropFilter: "blur(16px)"
+          }
+        },
+          E("span", { style: { fontSize: 24 } }, "🌹"),
+          E("div", { style: { flex: 1, textAlign: "left" } },
+            E("div", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 20, color: "var(--love)", fontWeight: 400, textShadow: textShadow } }, "Date Wizard"),
+            E("div", { style: { fontSize: 12, color: textColor, opacity: 0.6, marginTop: 1 } }, "1st, 2nd, 3rd date - AI finds the perfect spot")
+          ),
+          E("span", { style: { fontSize: 18, color: "var(--love)", opacity: 0.5 } }, "›")
         )
       )
-    );
+    ) // end home-wrap
+  ); // end outer div
   }
+
+  var isHome = tab === "home";
 
   var tabContent;
   if (tab === "spots") {
@@ -1954,11 +2036,36 @@ function MainApp(props) {
   } else if (tab === "rate") {
     tabContent = E(RateTab, { onSave: handleSave, onSwitchTab: setTab, onBack: function() { setTab("home"); } });
   } else if (tab === "find") {
-    tabContent = E(FindTab, { restaurants: restaurants, onBack: function() { setTab("home"); } });
+    tabContent = E(FindTab, { restaurants: restaurants, dateCtx: dateCtx, setDateCtx: setDateCtx, showDate: showDate, setShowDate: setShowDate, onBack: function() { setTab("home"); } });
+  } else if (tab === "profile") {
+    tabContent = E("div", { className: "screen" },
+      E("div", { style: { padding: "40px 24px", textAlign: "center" } },
+        E("div", { style: { fontSize: 48, marginBottom: 16 } }, "🧩"),
+        E("div", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 300, marginBottom: 10 } }, "Taste Profile"),
+        E("div", { style: { fontSize: 14, color: "var(--text3)", lineHeight: 1.6, maxWidth: 280, margin: "0 auto 24px" } },
+          "A short quiz so FindASpot learns exactly what you love. Coming soon."
+        ),
+        E("div", { style: { display: "inline-block", padding: "8px 20px", borderRadius: 20, border: "1px solid var(--border2)", fontSize: 12, color: "var(--text3)", letterSpacing: "0.08em", textTransform: "uppercase" } }, "Coming soon")
+      )
+    );
+  } else if (tab === "account") {
+    tabContent = E("div", { className: "screen" },
+      E("div", { style: { padding: "32px 24px" } },
+        E("div", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 300, marginBottom: 6 } }, firstName || "Account"),
+        E("div", { style: { fontSize: 13, color: "var(--text3)", marginBottom: 32 } }, user && user.email),
+        E("button", {
+          onClick: onLogout,
+          style: { fontSize: 14, color: "var(--accent2)", padding: "12px 0", borderBottom: "1px solid var(--border)", width: "100%", textAlign: "left" }
+        }, "Sign out")
+      )
+    );
   }
 
+  var nav = !isHome && E(GlobalNav, { tab: tab, setTab: setTab, dateCtx: dateCtx, setDateCtx: setDateCtx, showDate: showDate, setShowDate: setShowDate });
+
   return E("div", { className: "screen" },
-    tabContent,
+    isHome ? tabContent : E("div", null, nav, tabContent),
+    showDate && E(DateWizard, { onClose: function() { setShowDate(false); }, onConfirm: function(result) { setDateCtx(result.contextString); setShowDate(false); setTab("find"); } }),
     editing && E(EditModal, { existing: editing, onSave: handleSave, onClose: function() { setEditing(null); } })
   );
 }
