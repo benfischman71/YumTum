@@ -232,13 +232,12 @@
     .home-logo { font-family: 'Cormorant Garamond', serif; font-size: 54px; font-weight: 300; line-height: 1; letter-spacing: -0.01em; }
     .home-sub { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.16em; margin-top: 6px; }
     .home-cards { flex: 1; padding: 12px 16px calc(48px + var(--safe-b)); display: flex; flex-direction: column; gap: 12px; }
-    .home-card { flex: 1; border-radius: 22px; display: flex; flex-direction: column; border: none; text-align: left; position: relative; overflow: hidden; transition: transform 0.15s; cursor: pointer; }
+    .home-card { flex: 1; border-radius: 22px; display: flex; flex-direction: column; border: none; text-align: center; position: relative; overflow: hidden; transition: transform 0.15s; cursor: pointer; }
     .home-card:active { transform: scale(0.975); }
-    .home-card-inner { flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 26px 28px 24px; }
-    .home-card-emoji { font-size: 34px; line-height: 1; margin-bottom: 14px; }
-    .home-card-name { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 400; line-height: 1; letter-spacing: -0.01em; }
-    .home-card-desc { font-size: 13px; margin-top: 7px; line-height: 1.5; color: var(--text3); }
-    .home-card-arrow { position: absolute; right: 24px; bottom: 28px; font-size: 26px; opacity: 0.22; }
+    .home-card-inner { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 28px 20px; gap: 10px; }
+    .home-card-emoji { font-size: 48px; line-height: 1; }
+    .home-card-name { font-family: 'Cormorant Garamond', serif; font-size: 52px; font-weight: 400; line-height: 1; letter-spacing: -0.02em; }
+    .home-card-desc { font-size: 13px; line-height: 1.5; color: var(--text3); }
     .card-spots { background: linear-gradient(140deg, #1e1a16 0%, #27231f 100%); border: 1px solid #3a342e; }
     .card-rate  { background: linear-gradient(140deg, #181e15 0%, #202820 100%); border: 1px solid #2e3828; }
     .card-find  { background: linear-gradient(140deg, #2a1510 0%, #1e1008 100%); border: 1px solid rgba(201,71,42,0.45); box-shadow: 0 0 50px rgba(201,71,42,0.07); }
@@ -1365,35 +1364,26 @@ function MainApp(props) {
       E("div", { className: "home-cards" },
         E("button", { className: "home-card card-spots", onClick: function() { setTab("spots"); } },
           E("div", { className: "home-card-inner" },
-            E("div", { className: "home-card-emoji" }, "🗂"),
-            E("div", null,
-              E("div", { className: "home-card-name" }, "My Spots"),
-              E("div", { className: "home-card-desc" },
-                restaurants.length === 0 ? "Your saved restaurants" : restaurants.length + " restaurants saved"
-              )
+            E("div", { className: "home-card-emoji" }, "📖"),
+            E("div", { className: "home-card-name" }, "My Spots"),
+            E("div", { className: "home-card-desc" },
+              restaurants.length === 0 ? "Your saved restaurants" : restaurants.length + " restaurants saved"
             )
-          ),
-          E("div", { className: "home-card-arrow" }, "›")
+          )
         ),
         E("button", { className: "home-card card-rate", onClick: function() { setTab("rate"); } },
           E("div", { className: "home-card-inner" },
-            E("div", { className: "home-card-emoji" }, "⭐"),
-            E("div", null,
-              E("div", { className: "home-card-name" }, "Rate a Spot"),
-              E("div", { className: "home-card-desc" }, "Add a restaurant to your list")
-            )
-          ),
-          E("div", { className: "home-card-arrow" }, "›")
+            E("div", { className: "home-card-emoji" }, "🍴"),
+            E("div", { className: "home-card-name" }, "Rate a Spot"),
+            E("div", { className: "home-card-desc" }, "Add a restaurant to your list")
+          )
         ),
         E("button", { className: "home-card card-find", onClick: function() { setTab("find"); } },
           E("div", { className: "home-card-inner" },
-            E("div", { className: "home-card-emoji" }, "📍"),
-            E("div", null,
-              E("div", { className: "home-card-name", style: { color: "var(--accent2)" } }, "Find a Spot"),
-              E("div", { className: "home-card-desc" }, "AI recommendations near you")
-            )
-          ),
-          E("div", { className: "home-card-arrow", style: { color: "var(--accent2)", opacity: 0.45 } }, "›")
+            E("div", { className: "home-card-emoji" }, "✨"),
+            E("div", { className: "home-card-name", style: { color: "var(--accent2)" } }, "Find a Spot"),
+            E("div", { className: "home-card-desc" }, "AI recommendations near you")
+          )
         )
       )
     );
