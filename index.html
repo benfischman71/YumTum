@@ -1510,7 +1510,9 @@ function FindTab(props) {
 
     // Bad place types to always exclude
     var BAD_TYPES = ["tourist_attraction", "bakery", "cafe", "coffee_shop", "fast_food_restaurant",
-      "meal_takeaway", "convenience_store", "supermarket", "food_court", "night_club", "bar"];
+      "meal_takeaway", "meal_delivery", "convenience_store", "supermarket", "food_court",
+      "night_club", "bar", "sandwich_shop", "hamburger_restaurant",
+      "ice_cream_shop", "donut_shop", "drugstore", "grocery_store"];
 
     // If user typed a freeform query, use searchText with location bias for better relevance
     var searchPromise;
@@ -1526,8 +1528,8 @@ function FindTab(props) {
         body: JSON.stringify({
           textQuery: textQuery,
           maxResultCount: 20,
-          locationBias: {
-            circle: { center: { latitude: lat, longitude: lng }, radius: radius || 1600 }
+          locationRestriction: {
+            circle: { center: { latitude: lat, longitude: lng }, radius: (radius || 1600) * 3 }
           },
           includedType: "restaurant"
         })
@@ -1562,6 +1564,8 @@ function FindTab(props) {
         // Exclude bad types
         var isBad = types.some(function(t) { return BAD_TYPES.indexOf(t) >= 0; });
         if (isBad) return false;
+        // Must have a decent rating
+        if (p.rating && p.rating < 4.0) return false;
         // Cuisine filter
         if (cuisine !== "any") {
           var ct = p.primaryTypeDisplayName ? p.primaryTypeDisplayName.text.toLowerCase() : "";
