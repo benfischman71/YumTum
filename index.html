@@ -645,16 +645,20 @@ function claudeFind(userHistory, nearby, query, dateContext) {
       : dateContext.indexOf("Anniversary") >= 0 ? anniversaryRules : "")
     : "";
 
-  var prompt = "You are the ultimate restaurant matchmaker for 20-30 year olds. The restaurant pick signals who he is - cool and discovered beats safe and generic every time.\n\n"
-    + "USER TASTE HISTORY: " + histStr + "\n\n"
+  var cityHint = nearby.length > 0 && nearby[0].formattedAddress ? nearby[0].formattedAddress : "";
+
+  var prompt = "You are the world's best restaurant matchmaker for 20-30 year olds. The restaurant pick is a cultural signal - it reveals his taste, awareness, and personality. Cool and discovered always beats safe and generic.\n\n"
+    + "CITY CONTEXT (infer city/neighborhood from these addresses): " + cityHint + "\n\n"
     + "CANDIDATE RESTAURANTS FROM GOOGLE:\n" + nearbyStr + "\n\n"
-    + "OCCASION: " + (dateContext || "General recommendation") + ". " + dateRules + "\n"
+    + "OCCASION: " + (dateContext || "General dinner recommendation") + ". " + dateRules + "\n"
     + (query ? "USER PREFERENCES: " + query + "\n" : "")
-    + "\nYOUR JOB:\n"
-    + "1. Use web search to check the current reputation of the most promising candidates - Eater, The Infatuation, NYMag, recent reviews. Still hot? Chef leave? Tourist trap? Local favorite?\n"
-    + "2. Pick the 3 best based on real current knowledge plus the occasion rules.\n"
-    + "3. Write reasons grounded in actual knowledge of each place - mention the vibe, what makes it work, why it fits this occasion.\n"
-    + "Return ONLY a valid JSON array: [{"index":0,"name":"exact restaurant name","reason":"2 sentence reason based on real knowledge"}]";
+    + "USER TASTE HISTORY: " + histStr + "\n\n"
+    + "YOUR RESEARCH PROCESS - follow these steps:\n"
+    + "STEP 1: Identify the city/neighborhood from the addresses above. Then determine which publications and critics define what is cool there right now. Examples: NYC = Eater NY, The Infatuation, Grub Street, NYMag Grub Street; LA = Eater LA, LA Times Restaurants, Infatuation LA; Chicago = Eater Chicago, Chicago Magazine, Trib dining; SF = Eater SF, SF Chronicle, Infatuation SF; London = Hot Dinners, Time Out London, Guardian Food; Paris = Le Fooding, Time Out Paris; smaller cities = find the best local alt-weekly or food blog.\n"
+    + "STEP 2: Use web search to research the 4-5 most promising candidates from the Google list against those local sources. For each: Is it still hot or has it peaked? Did the chef leave? Is it a local favorite or a tourist trap? Any recent Eater coverage, best-of lists, or red flags? What is the actual current vibe, crowd, and energy level?\n"
+    + "STEP 3: Apply the occasion rules ruthlessly. A place that is technically good but wrong for this occasion (too stuffy, wrong energy, chain vibes) gets cut.\n"
+    + "STEP 4: Return your 3 picks. Write reasons grounded in REAL current knowledge - name the actual vibe, a specific dish or feature, recent press, and exactly why it works for this occasion. No generic filler.\n\n"
+    + "Return ONLY a valid JSON array with no other text before or after it: [{\"index\":0,\"name\":\"exact name from list\",\"reason\":\"2 punchy sentences of real specific knowledge about this place and why it fits\"}]";
 
   return fetch(SUPABASE_URL + "/functions/v1/claude-proxy", {
     method: "POST",
@@ -665,7 +669,7 @@ function claudeFind(userHistory, nearby, query, dateContext) {
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
       max_tokens: 2000,
-      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }],
+      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 8 }],
       messages: [{ role: "user", content: prompt }]
     })
   }).then(function(r) { return r.json(); });
