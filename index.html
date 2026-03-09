@@ -1611,7 +1611,7 @@ function FindTab(props) {
     // If date context active, use Claude-directed search for smarter results
     if (ctx && !query) {
       setStatus("Claude is curating the perfect spots...");
-      claudeDirectedSearch(lat, lng, radius, ctx, query, restaurants, filtered).then(function(places) {
+      claudeDirectedSearch(lat, lng, radius, ctx, query, restaurants, []).then(function(places) {
         if (!places || places.length === 0) {
           // Fallback to regular nearby search
           nearbySearch(lat, lng, radius).then(function(data) { processPlaces(data.places || [], ctx); });
