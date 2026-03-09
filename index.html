@@ -1039,59 +1039,79 @@ function FindTab(props) {
   var _showDate = useState(false); var showDate = _showDate[0]; var setShowDate = _showDate[1];
   var _dateCtx = useState(null); var dateCtx = _dateCtx[0]; var setDateCtx = _dateCtx[1];
   var _status = useState(""); var status = _status[0]; var setStatus = _status[1];
+  var _locText = useState(""); var locText = _locText[0]; var setLocText = _locText[1];
+  var _locMode = useState("gps"); var locMode = _locMode[0]; var setLocMode = _locMode[1];
+  var _locCoords = useState(null); var locCoords = _locCoords[0]; var setLocCoords = _locCoords[1];
+
+  function geocodeLocation(text) {
+    return fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_KEY,
+        "X-Goog-FieldMask": "places.location,places.displayName,places.formattedAddress"
+      },
+      body: JSON.stringify({ textQuery: text, maxResultCount: 1 })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d.places && d.places.length > 0 && d.places[0].location) {
+        return { lat: d.places[0].location.latitude, lng: d.places[0].location.longitude, name: d.places[0].displayName ? d.places[0].displayName.text : text };
+      }
+      return null;
+    });
+  }
 
   var needsGKey = GOOGLE_KEY === "YOUR_GOOGLE_PLACES_API_KEY";
   var needsCKey = CLAUDE_KEY === "YOUR_CLAUDE_API_KEY";
 
+
+  function doSearch(lat, lng) {
+    setStatus("Finding restaurants nearby...");
+    nearbySearch(lat, lng, radius).then(function(data) {
+      var places = data.places || [];
+      var filtered = places.filter(function(p) {
+        if (cuisine !== "any") {
+          var types = p.types || [];
+          var ct = p.primaryTypeDisplayName ? p.primaryTypeDisplayName.text.toLowerCase() : "";
+          var match = types.some(function(t) { return t.indexOf(cuisine.toLowerCase()) >= 0; }) || ct.indexOf(cuisine.toLowerCase()) >= 0;
+          if (!match) return false;
+        }
+        if (price !== "any") { var pr = priceLvl(p.priceLevel); if (pr.sym !== price) return false; }
+        return true;
+      });
+      setResults(filtered);
+      if ((query || dateCtx) && !needsCKey && filtered.length > 0) {
+        setStatus("Getting AI recommendations...");
+        claudeFind(restaurants, filtered, query, dateCtx).then(function(cd) {
+          setLoading(false); setStatus("");
+          if (cd.content && cd.content[0]) {
+            try {
+              var txt = cd.content[0].text;
+              var start = txt.indexOf("["); var end = txt.lastIndexOf("]") + 1;
+              var picks = JSON.parse((start >= 0 && end > start) ? txt.slice(start, end) : txt.trim());
+              setAiPicks(picks);
+            } catch(e) { setAiPicks(null); }
+          }
+        }).catch(function() { setLoading(false); setStatus(""); });
+      } else { setLoading(false); setStatus(""); }
+    }).catch(function() { setLoading(false); setStatus(""); setErr("Couldn't fetch restaurants."); });
+  }
+
   function handleFind() {
     if (needsGKey) { setErr("Google Places API key needed for Find a Spot."); return; }
     setLoading(true); setErr(""); setResults([]); setAiPicks(null);
-    setStatus("Getting your location...");
-    navigator.geolocation.getCurrentPosition(function(pos) {
-      var lat = pos.coords.latitude;
-      var lng = pos.coords.longitude;
-      setStatus("Finding restaurants nearby...");
-      nearbySearch(lat, lng, radius).then(function(data) {
-        var places = data.places || [];
-        // Filter by cuisine and price
-        var filtered = places.filter(function(p) {
-          if (cuisine !== "any") {
-            var types = p.types || [];
-            var ct = p.primaryTypeDisplayName ? p.primaryTypeDisplayName.text.toLowerCase() : "";
-            var match = types.some(function(t) { return t.indexOf(cuisine.toLowerCase()) >= 0; })
-              || ct.indexOf(cuisine.toLowerCase()) >= 0;
-            if (!match) return false;
-          }
-          if (price !== "any") {
-            var pr = priceLvl(p.priceLevel);
-            if (pr.sym !== price) return false;
-          }
-          return true;
-        });
-        setResults(filtered);
-        if ((query || dateCtx) && !needsCKey && filtered.length > 0) {
-          setStatus("Getting AI recommendations...");
-          claudeFind(restaurants, filtered, query, dateCtx).then(function(cd) {
-            setLoading(false); setStatus("");
-            if (cd.content && cd.content[0]) {
-              try {
-                var txt = cd.content[0].text;
-                var start = txt.indexOf("[");
-                var end = txt.lastIndexOf("]") + 1;
-                var clean = (start >= 0 && end > start) ? txt.slice(start, end) : txt.trim();
-                var picks = JSON.parse(clean);
-                setAiPicks(picks);
-              } catch(e) { setAiPicks(null); }
-            }
-          }).catch(function() { setLoading(false); setStatus(""); });
-        } else {
-          setLoading(false); setStatus("");
-        }
-      }).catch(function() { setLoading(false); setStatus(""); setErr("Couldn't fetch restaurants."); });
-    }, function() {
-      setLoading(false); setStatus("");
-      setErr("Location access denied. Please allow location in Settings.");
-    }, { timeout: 10000 });
+    if (locMode === "text" && locText.trim()) {
+      setStatus("Finding that location...");
+      geocodeLocation(locText.trim()).then(function(coords) {
+        if (!coords) { setLoading(false); setStatus(""); setErr("Couldn't find that location. Try a city, neighborhood, or address."); return; }
+        setLocCoords(coords);
+        doSearch(coords.lat, coords.lng);
+      }).catch(function() { setLoading(false); setStatus(""); setErr("Location lookup failed."); });
+    } else {
+      setStatus("Getting your location...");
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        doSearch(pos.coords.latitude, pos.coords.longitude);
+      }, function() { setLoading(false); setStatus(""); setErr("Location access denied. Please allow location or type a neighborhood above."); }, { timeout: 10000 });
+    }
   }
 
   var cuisineOpts = [
@@ -1144,6 +1164,40 @@ function FindTab(props) {
         needsGKey ? "⚠️ Add your Google Places API key (GOOGLE_KEY) to use Find a Spot." : "ℹ️ Add your Claude API key (CLAUDE_KEY) for AI-powered recommendations."
       ),
       E("div", { className: "find-controls" },
+        E("div", { style: { marginBottom: 4 } },
+          E("div", { style: { display: "flex", gap: 8, marginBottom: 10 } },
+            E("button", {
+              onClick: function() { setLocMode("gps"); setLocText(""); setLocCoords(null); },
+              style: {
+                flex: 1, padding: "11px 14px", borderRadius: 10, fontSize: 13, fontWeight: 500,
+                border: locMode === "gps" ? "1.5px solid var(--accent)" : "1px solid var(--border2)",
+                background: locMode === "gps" ? "var(--accent-dim)" : "var(--bg3)",
+                color: locMode === "gps" ? "var(--accent2)" : "var(--text2)",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+              }
+            }, "📍 My location"),
+            E("button", {
+              onClick: function() { setLocMode("text"); },
+              style: {
+                flex: 1, padding: "11px 14px", borderRadius: 10, fontSize: 13, fontWeight: 500,
+                border: locMode === "text" ? "1.5px solid var(--accent)" : "1px solid var(--border2)",
+                background: locMode === "text" ? "var(--accent-dim)" : "var(--bg3)",
+                color: locMode === "text" ? "var(--accent2)" : "var(--text2)",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+              }
+            }, "🗺 A neighborhood")
+          ),
+          locMode === "text" && E("input", {
+            type: "text",
+            placeholder: "West Village NYC, SoHo, Silver Lake LA...",
+            value: locText,
+            onChange: function(e) { setLocText(e.target.value); setLocCoords(null); },
+            style: { fontSize: 15, marginBottom: 0 }
+          }),
+          locCoords && E("div", { style: { fontSize: 12, color: "var(--like)", marginTop: 6, paddingLeft: 2 } },
+            "📌 Searching near " + locCoords.name
+          )
+        ),
         E("button", {
           className: "date-big-btn" + (dateCtx ? " on" : ""),
           onClick: function() { dateCtx ? setDateCtx(null) : setShowDate(true); }
@@ -1331,59 +1385,125 @@ function MainApp(props) {
   if (tab === "home") {
     var loveCount = restaurants.filter(function(r) { return r.rating === "love"; }).length;
     var hr = new Date().getHours() + new Date().getMinutes() / 60;
-    var skyTop, skyBot, logoAccent;
-    if (hr < 6)       { skyTop="#05040a"; skyBot="#0a0810"; logoAccent="#6b5fa8"; }
-    else if (hr < 8)  { skyTop="#1a0e1f"; skyBot="#2d1506"; logoAccent="#e08050"; }
-    else if (hr < 12) { skyTop="#0d1520"; skyBot="#1a2a18"; logoAccent="#7ab870"; }
-    else if (hr < 16) { skyTop="#0e1822"; skyBot="#122018"; logoAccent="#5ba85a"; }
-    else if (hr < 19) { skyTop="#1f1008"; skyBot="#2a1510"; logoAccent="#e07040"; }
-    else if (hr < 21) { skyTop="#1a0a0f"; skyBot="#120a20"; logoAccent="#c0507a"; }
-    else              { skyTop="#05040a"; skyBot="#0a0810"; logoAccent="#7060c0"; }
+    var skyTop, skyBot, logoAccent, cardBg, cardBorder, textColor, textShadow;
+    // Genuine sky colors — bright where the sky is bright, dark where it's dark
+    if (hr < 5) {
+      // Deep night — true midnight navy
+      skyTop="#05080f"; skyBot="#090c1e";
+      logoAccent="#a090e0"; cardBg="rgba(12,10,28,0.72)"; cardBorder="rgba(160,144,224,0.18)";
+      textColor="#d8d0f8"; textShadow="0 1px 8px rgba(0,0,0,0.8)";
+    } else if (hr < 6.5) {
+      // Pre-dawn — inky blue softening to deep violet
+      skyTop="#180c2a"; skyBot="#2a1040";
+      logoAccent="#e080c0"; cardBg="rgba(20,8,36,0.68)"; cardBorder="rgba(224,128,192,0.2)";
+      textColor="#f0d8f0"; textShadow="0 1px 8px rgba(0,0,0,0.7)";
+    } else if (hr < 7.5) {
+      // Sunrise — coral, peach, rose blazing up from the horizon
+      skyTop="#c04030"; skyBot="#f0803a";
+      logoAccent="#ffe080"; cardBg="rgba(60,15,10,0.62)"; cardBorder="rgba(255,224,128,0.28)";
+      textColor="#fff0d8"; textShadow="0 1px 10px rgba(80,10,0,0.6)";
+    } else if (hr < 9.5) {
+      // Early morning — warm amber sky fading into pale gold-blue
+      skyTop="#e8a030"; skyBot="#a0c8e8";
+      logoAccent="#ffffff"; cardBg="rgba(40,25,0,0.58)"; cardBorder="rgba(255,255,255,0.22)";
+      textColor="#fff8e8"; textShadow="0 1px 10px rgba(60,30,0,0.5)";
+    } else if (hr < 12) {
+      // Mid-morning — clear fresh sky blue, lots of light
+      skyTop="#5ab0e8"; skyBot="#90d0f0";
+      logoAccent="#ffffff"; cardBg="rgba(10,30,55,0.58)"; cardBorder="rgba(255,255,255,0.22)";
+      textColor="#ffffff"; textShadow="0 1px 8px rgba(0,30,80,0.4)";
+    } else if (hr < 14.5) {
+      // Midday — vivid peak blue, bright and hot
+      skyTop="#2888d8"; skyBot="#60b8f0";
+      logoAccent="#ffffff"; cardBg="rgba(8,28,58,0.6)"; cardBorder="rgba(255,255,255,0.2)";
+      textColor="#ffffff"; textShadow="0 1px 8px rgba(0,20,70,0.45)";
+    } else if (hr < 17) {
+      // Afternoon — slightly warmer deeper blue, still very bright
+      skyTop="#3070c0"; skyBot="#70a8e0";
+      logoAccent="#ffe870"; cardBg="rgba(10,24,52,0.6)"; cardBorder="rgba(255,232,112,0.22)";
+      textColor="#f0f6ff"; textShadow="0 1px 8px rgba(0,15,60,0.45)";
+    } else if (hr < 19) {
+      // Golden hour — the magic hour, amber and gold flooding everything
+      skyTop="#d86018"; skyBot="#f0a030";
+      logoAccent="#fff0a0"; cardBg="rgba(55,20,0,0.6)"; cardBorder="rgba(255,240,160,0.28)";
+      textColor="#fff4d0"; textShadow="0 1px 10px rgba(80,25,0,0.55)";
+    } else if (hr < 20.5) {
+      // Dusk — deep coral fading into rich purple-magenta
+      skyTop="#9020a0"; skyBot="#c84060";
+      logoAccent="#ffc0e0"; cardBg="rgba(30,6,35,0.65)"; cardBorder="rgba(255,192,224,0.2)";
+      textColor="#ffe8f8"; textShadow="0 1px 10px rgba(40,0,50,0.6)";
+    } else if (hr < 22) {
+      // Early evening — deep indigo twilight
+      skyTop="#1a1060"; skyBot="#2a1848";
+      logoAccent="#c0a0f8"; cardBg="rgba(12,8,40,0.68)"; cardBorder="rgba(192,160,248,0.18)";
+      textColor="#e0d8ff"; textShadow="0 1px 8px rgba(0,0,0,0.6)";
+    } else {
+      // Night — back to deep navy-black
+      skyTop="#05080f"; skyBot="#090c1e";
+      logoAccent="#a090e0"; cardBg="rgba(12,10,28,0.72)"; cardBorder="rgba(160,144,224,0.18)";
+      textColor="#d8d0f8"; textShadow="0 1px 8px rgba(0,0,0,0.8)";
+    }
     return E("div", { className: "home-wrap", style: { background: "linear-gradient(175deg, " + skyTop + " 0%, " + skyBot + " 100%)" } },
       E("div", { className: "home-header" },
         E("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" } },
           E("div", null,
-            E("div", { style: { fontSize: 12, color: "var(--text3)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.14em" } },
+            E("div", { style: { fontSize: 12, color: textColor, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.14em", opacity: 0.65, textShadow: textShadow } },
               firstName ? "Hey, " + firstName : "Welcome back"
             ),
-            E("div", { className: "home-logo" },
-              E("span", { style: { color: "var(--text)" } }, "Yum"),
+            E("div", { className: "home-logo", style: { textShadow: textShadow } },
+              E("span", { style: { color: textColor } }, "Yum"),
               E("span", { style: { color: logoAccent } }, "Tum")
             ),
-            E("div", { className: "home-sub" },
+            E("div", { className: "home-sub", style: { color: textColor, opacity: 0.55, textShadow: textShadow } },
               restaurants.length > 0 ? restaurants.length + " spots saved  \xb7  " + loveCount + " loved" : "Your personal restaurant guide"
             )
           ),
           E("button", { onClick: onLogout, style: {
-            fontSize: 11, color: "var(--text3)", padding: "6px 12px",
-            border: "1px solid var(--border)", borderRadius: 20, marginTop: 14,
-            letterSpacing: "0.06em", textTransform: "uppercase"
+            fontSize: 11, color: textColor, opacity: 0.6, padding: "6px 12px",
+            border: "1px solid " + cardBorder, borderRadius: 20, marginTop: 14,
+            letterSpacing: "0.06em", textTransform: "uppercase",
+            background: cardBg, backdropFilter: "blur(12px)"
           }}, "Sign out")
         )
       ),
       E("div", { className: "home-cards" },
-        E("button", { className: "home-card card-spots", onClick: function() { setTab("spots"); } },
+        E("button", { className: "home-card", onClick: function() { setTab("spots"); },
+          style: { background: cardBg, border: "1px solid " + cardBorder, backdropFilter: "blur(16px)" }
+        },
           E("div", { className: "home-card-inner" },
-            E("div", { className: "home-card-emoji" }, "📖"),
-            E("div", { className: "home-card-name" }, "My Spots"),
-            E("div", { className: "home-card-desc" },
-              restaurants.length === 0 ? "Your saved restaurants" : restaurants.length + " restaurants saved"
+            E("div", { className: "home-card-emoji" }, "🗂"),
+            E("div", null,
+              E("div", { className: "home-card-name", style: { color: textColor, textShadow: textShadow } }, "My Spots"),
+              E("div", { className: "home-card-desc", style: { color: textColor, opacity: 0.6 } },
+                restaurants.length === 0 ? "Your saved restaurants" : restaurants.length + " restaurants saved"
+              )
             )
-          )
+          ),
+          E("div", { className: "home-card-arrow", style: { color: textColor, opacity: 0.35 } }, "›")
         ),
-        E("button", { className: "home-card card-rate", onClick: function() { setTab("rate"); } },
+        E("button", { className: "home-card", onClick: function() { setTab("rate"); },
+          style: { background: cardBg, border: "1px solid " + cardBorder, backdropFilter: "blur(16px)" }
+        },
           E("div", { className: "home-card-inner" },
-            E("div", { className: "home-card-emoji" }, "🍴"),
-            E("div", { className: "home-card-name" }, "Rate a Spot"),
-            E("div", { className: "home-card-desc" }, "Add a restaurant to your list")
-          )
+            E("div", { className: "home-card-emoji" }, "⭐"),
+            E("div", null,
+              E("div", { className: "home-card-name", style: { color: textColor, textShadow: textShadow } }, "Rate a Spot"),
+              E("div", { className: "home-card-desc", style: { color: textColor, opacity: 0.6 } }, "Add a restaurant to your list")
+            )
+          ),
+          E("div", { className: "home-card-arrow", style: { color: textColor, opacity: 0.35 } }, "›")
         ),
-        E("button", { className: "home-card card-find", onClick: function() { setTab("find"); } },
+        E("button", { className: "home-card", onClick: function() { setTab("find"); },
+          style: { background: cardBg, border: "1px solid " + logoAccent.replace("#","rgba(").replace(/(..)(..)(..)/, function(m,r,g,b){ return parseInt(r,16)+","+parseInt(g,16)+","+parseInt(b,16); }) + ",0.35)", backdropFilter: "blur(16px)" }
+        },
           E("div", { className: "home-card-inner" },
-            E("div", { className: "home-card-emoji" }, "✨"),
-            E("div", { className: "home-card-name", style: { color: "var(--accent2)" } }, "Find a Spot"),
-            E("div", { className: "home-card-desc" }, "AI recommendations near you")
-          )
+            E("div", { className: "home-card-emoji" }, "📍"),
+            E("div", null,
+              E("div", { className: "home-card-name", style: { color: logoAccent, textShadow: textShadow } }, "Find a Spot"),
+              E("div", { className: "home-card-desc", style: { color: textColor, opacity: 0.6 } }, "AI recommendations near you")
+            )
+          ),
+          E("div", { className: "home-card-arrow", style: { color: logoAccent, opacity: 0.5 } }, "›")
         )
       )
     );
